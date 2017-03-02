@@ -11,7 +11,8 @@ extern "C"
  */
 #include "zcl.h"
 
-#define PERIPH_TEST_EVENT   0
+#define PERIPH_TEST_EVENT   1
+#define PERIPH_RESET_EVENT  2
   
 #define PERIPH_TEST_CMD1    0
 #define PERIPH_TEST_CMD2    1 
@@ -19,8 +20,11 @@ extern "C"
    
 typedef struct
 {
-  osal_event_hdr_t hdr;
-  uint8            cmd;
+  	osal_event_hdr_t hdr;
+  	uint8            srcEP;
+	uint16         cmdID;
+	uint16         param1;
+	uint16         param2;
 } peripheralCmd_t;
 
 

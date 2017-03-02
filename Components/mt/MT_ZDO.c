@@ -64,6 +64,8 @@
 
 #include "nwk_util.h"
 
+#include "cust_func.h"
+
 /**************************************************************************************************
  * CONSTANTS
  **************************************************************************************************/
@@ -537,6 +539,7 @@ static void MT_ZdoNWKAddressRequest(uint8 *pBuf)
 
   retValue = (uint8)ZDP_NwkAddrReq(pExtAddr, reqType, startIndex, 0);
 
+  cust_debug_str("retValue is %d", retValue);
   /* Build and send back the response */
   MT_BuildAndSendZToolResponse(((uint8)MT_RPC_CMD_SRSP | (uint8)MT_RPC_SYS_ZDO), cmdId, 1, &retValue);
 

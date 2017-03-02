@@ -153,6 +153,10 @@ int main( void )
   WatchDogEnable( WDTIMX );
 #endif
   
+  cust_bspLedInit();
+  CUST_LED1_OFF();
+  CUST_LED2_OFF();
+  
   cust_uart_init();
   cust_uart_open();  
   
@@ -166,6 +170,8 @@ int main( void )
   //cust_delay_100ms(60);
   
   cust_uart_print("\nPeriph uart mode\n");
+
+	
 
   osal_start_system(); // No Return from here
 

@@ -11,9 +11,22 @@
 #include "uart.h"
 #include "gpio.h"
 #include "ioc.h"
+#include "OSAL.h"
+#include "DebugTrace.h"
+
+#include "ZComDef.h"
+#include "OnBoard.h"
+#include "OSAL_Nv.h"
+
+#include "peripheral.h"
+
+extern uint8 Hal_TaskID;
+extern uint8 peripheral_TaskID;
 
 char buffer[BUFFER_LENGTH];
 int index;
+
+static int counterDefaultKey = 0;
 
 int process_setting_cmd(char *buf);
 
@@ -89,6 +102,15 @@ void cust_uart_put( char *str, ...){
   
   
   
+}
+
+void cust_debug_str( char *fmt, ...){
+  va_list ap;//初始化指向可变参数列表的指针         
+  char string[256];         
+  va_start(ap,fmt);//将第一个可变参数的地址付给ap，即ap指向可变参数列表的开始         
+  vsprintf(string,fmt,ap);//将参数fmt、ap指向的可变参数一起转换成格式化字符串，放string数组中，其作用同sprintf（），只是参数类型不同         
+  debug_str((uint8 *) string); //把格式化字符串从debug
+  va_end(ap);    //ap付值为0，没什么实际用处，主要是为程序健壮性   
 }
 
 void cust_uart_print( char *fmt, ...){
@@ -206,4 +228,62 @@ int process_setting_cmd(char *buf){
     cust_uart_print("Unrecognized cmd\n");
   }
   return 1;
+}
+void cust_bspLedInit(void){
+    GPIOPinTypeGPIOOutput(LED_BASE, LED_PIN1|LED_PIN2);
+    //IOCPadConfigSet(LED_BASE, LED_PIN1|LED_PIN2, IOC_OVERRIDE_PDE);
+}
+
+
+void cust_bspKeyInit(uint8_t ui8Mode){
+  
+      //
+    // Store mode
+    //
+    //ui8BspKeyMode = ui8Mode;
+
+    //
+    // Initialize keys on GPIO port B (input pullup)
+    //
+    GPIOPinTypeGPIOInput(KEY_DEFAULT_BASE, KEY_DEFAULT_PIN);
+    IOCPadConfigSet(KEY_DEFAULT_BASE, KEY_DEFAULT_PIN, IOC_OVERRIDE_PUE);
+    //GPIOPinIntDisable(KEY_DEFAULT_BASE, KEY_DEFAULT_PIN);
+    
+}
+
+// key poll function
+void cust_HalKeyConfig( bool interruptEnable, halKeyCBack_t cback){
+  
+  cust_bspKeyInit(BSP_KEY_MODE_POLL);
+  
+}
+
+void cust_HalKeyPoll(void){
+  uint8 value = 3;
+  
+  if( !GPIOPinRead(KEY_DEFAULT_BASE, KEY_DEFAULT_PIN) ){
+    counterDefaultKey++;   
+    
+  }else{
+    counterDefaultKey = 0;
+  }
+  
+  if(counterDefaultKey > MAX_DEFAULT_KEY_COUNTER ){
+    cust_debug_str("counter:%d", counterDefaultKey);
+    debug_str("Valid Key");
+    counterDefaultKey = 0;
+    
+    
+    if ((osal_nv_write(3, 0, 1, &value)) == ZSUCCESS)
+    {
+       // 
+       CUST_LED2_ON();
+       // delay 1 second
+       
+       osal_start_timerEx( peripheral_TaskID , PERIPH_RESET_EVENT , 1000);
+    }
+   
+    
+  }
+  
 }

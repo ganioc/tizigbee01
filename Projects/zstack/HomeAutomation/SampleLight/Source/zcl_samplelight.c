@@ -103,6 +103,9 @@
 
 #include "NLMEDE.h"
 
+
+#include "DebugTrace.h"
+
 /*********************************************************************
  * MACROS
  */
@@ -1571,6 +1574,8 @@ static void zclSampleLight_ProcessZDOMsgs( zdoIncomingMsg_t *pMsg )
 {
   zclEZMode_ActionData_t data;
   ZDO_MatchDescRsp_t *pMatchDescRsp;
+
+  debug_str("cb zclSampleLight_ProcessZDOMsgs");
 
   // Let EZ-Mode know of the Simple Descriptor Response
   if ( pMsg->clusterID == Match_Desc_rsp )

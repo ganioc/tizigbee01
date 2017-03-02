@@ -63,6 +63,8 @@
 /* Allow access macRandomByte() */
 #include "mac_radio_defs.h"
 
+#include "cust_func.h"
+
 /******************************************************************************
  * CONSTANTS
  */
@@ -125,6 +127,10 @@ void InitBoard( uint8 level )
     /* Initialize Key stuff */
     OnboardKeyIntEnable = HAL_KEY_INTERRUPT_DISABLE;
     HalKeyConfig( OnboardKeyIntEnable, OnBoard_KeyCallback);
+	
+    cust_HalKeyConfig( OnboardKeyIntEnable, OnBoard_KeyCallback);
+
+		
   }
 }
 

@@ -76,6 +76,8 @@
   #include "sb_shared.h"
 #endif
 
+#include "DebugTrace.h"
+
 /******************************************************************************
  * MACROS
  *****************************************************************************/
@@ -273,6 +275,9 @@ static void powerOffSoc(void);
 uint8 MT_SysCommandProcessing(uint8 *pBuf)
 {
   uint8 status = MT_RPC_SUCCESS;
+
+
+  debug_str("MT_SysCommandProcessing()");
 
   switch (pBuf[MT_RPC_POS_CMD1])
   {
