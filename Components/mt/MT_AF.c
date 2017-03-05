@@ -826,7 +826,7 @@ void MT_AfIncomingMsg(afIncomingMSGPacket_t *pMsg)
 
   /* Build and send back the response */
   MT_BuildAndSendZToolResponse(((uint8)MT_RPC_CMD_AREQ|(uint8)MT_RPC_SYS_AF), cmd, respLen, pRsp);
-
+  debug_str("MT_AfIncomingMsg");
   (void)osal_mem_free(pRsp);
 }
 

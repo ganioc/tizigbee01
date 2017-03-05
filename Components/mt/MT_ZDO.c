@@ -65,6 +65,7 @@
 #include "nwk_util.h"
 
 #include "cust_func.h"
+#include "DebugTrace.h"
 
 /**************************************************************************************************
  * CONSTANTS
@@ -2151,6 +2152,7 @@ static void MT_ZdoSetRejoinParameters(uint8 *pBuf)
  */
 void MT_ZdoStateChangeCB(osal_event_hdr_t *pMsg)
 {
+  debug_str("MT_ZdoStateChangeCB");
   MT_BuildAndSendZToolResponse(((uint8)MT_RPC_CMD_AREQ | (uint8)MT_RPC_SYS_ZDO),
                                        MT_ZDO_STATE_CHANGE_IND, 1, &pMsg->status);
 }
@@ -2172,6 +2174,8 @@ void MT_ZdoDirectCB( afIncomingMSGPacket_t *pData, zdoIncomingMsg_t *inMsg )
 
   // save original value because MT_ZdoHandleExceptions() function could modify pData->clusterId
   origClusterId = pData->clusterId;
+
+  debug_str("MT_ZdoDirectCB");
 
   // Is the message an exception or not a response?
   if ( MT_ZdoHandleExceptions( pData, inMsg ) || ( (origClusterId & ZDO_RESPONSE_BIT) == 0 ) )
@@ -2247,6 +2251,7 @@ static uint8 MT_ZdoHandleExceptions( afIncomingMSGPacket_t *pData, zdoIncomingMs
 
     default:
       ret = FALSE;
+			cust_debug_str("MT_ZdoHandleExceptions %d, unrecognized", inMsg->clusterID);
       break;
   }
 

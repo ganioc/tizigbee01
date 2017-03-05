@@ -105,6 +105,7 @@
 
 
 #include "DebugTrace.h"
+#include "cust_func.h"
 
 /*********************************************************************
  * MACROS
@@ -341,7 +342,7 @@ void zclSampleLight_Init( byte task_id )
   // Register for all key events - This app will handle all key events
   RegisterForKeys( zclSampleLight_TaskID );
 
-  // Register for a test endpoint
+  // Register for a test endpoint，可以用来做测试，或增加新功能
   afRegister( &sampleLight_TestEp );
 
 #ifdef ZCL_EZMODE
@@ -392,6 +393,8 @@ void zclSampleLight_Init( byte task_id )
 #ifdef ZGP_AUTO_TT
   zgpTranslationTable_RegisterEP ( &zclSampleLight_SimpleDesc );
 #endif
+
+  debug_str("End of _Init()");
 }
 
 /*********************************************************************
@@ -411,25 +414,31 @@ uint16 zclSampleLight_event_loop( uint8 task_id, uint16 events )
 
   if ( events & SYS_EVENT_MSG )
   {
+    debug_str("Recv zclSampleLight_event_loop SYS_EVENT_MSG");
     while ( (MSGpkt = (afIncomingMSGPacket_t *)osal_msg_receive( zclSampleLight_TaskID )) )
     {
+      debug_str("Recv zclSampleLight_event_loop");
       switch ( MSGpkt->hdr.event )
       {
 #ifdef ZCL_EZMODE
         case ZDO_CB_MSG:
+					debug_str("Recv ZDO_CB_MSG");
           zclSampleLight_ProcessZDOMsgs( (zdoIncomingMsg_t *)MSGpkt );
           break;
 #endif
         case ZCL_INCOMING_MSG:
+		   debug_str("Recv zcl_incoming_msg");
           // Incoming ZCL Foundation command/response messages
           zclSampleLight_ProcessIncomingMsg( (zclIncomingMsg_t *)MSGpkt );
           break;
 
         case KEY_CHANGE:
+		   debug_str("Recv KEY_CHANGE");
           zclSampleLight_HandleKeys( ((keyChange_t *)MSGpkt)->state, ((keyChange_t *)MSGpkt)->keys );
           break;
 
         case ZDO_STATE_CHANGE:
+		   debug_str("Recv ZDO_STATE_CHANGE");
           zclSampleLight_NwkState = (devStates_t)(MSGpkt->hdr.status);
 
           // now on the network
@@ -437,15 +446,19 @@ uint16 zclSampleLight_event_loop( uint8 task_id, uint16 events )
                (zclSampleLight_NwkState == DEV_ROUTER)   ||
                (zclSampleLight_NwkState == DEV_END_DEVICE) )
           {
+            cust_debug_str("zclSampleLight_NwkState %d", zclSampleLight_NwkState);
             giLightScreenMode = LIGHT_MAINMODE;
             zclSampleLight_LcdDisplayUpdate();
 #ifdef ZCL_EZMODE
             zcl_EZModeAction( EZMODE_ACTION_NETWORK_STARTED, NULL );
+			  cust_debug_str("EZMODE_ACTION_NETWORK_STARTED");
 #endif // ZCL_EZMODE
           }
           break;
-
+        case AF_DATA_CONFIRM_CMD:
+					debug_str("Recv data_confirm_cmd");
         default:
+				cust_debug_str("zclSampleLight_event_loop %d unrecognized", MSGpkt->hdr.event);
           break;
       }
 
@@ -457,8 +470,11 @@ uint16 zclSampleLight_event_loop( uint8 task_id, uint16 events )
     return (events ^ SYS_EVENT_MSG);
   }
 
+ debug_str("Recv zclSampleLight_event_loop middle");
+ 
   if ( events & SAMPLELIGHT_IDENTIFY_TIMEOUT_EVT )
   {
+    debug_str("Recv SAMPLELIGHT_IDENTIFY_TIMEOUT_EVT");
     if ( zclSampleLight_IdentifyTime > 0 )
       zclSampleLight_IdentifyTime--;
     zclSampleLight_ProcessIdentifyTimeChange();
@@ -468,17 +484,21 @@ uint16 zclSampleLight_event_loop( uint8 task_id, uint16 events )
 
   if ( events & SAMPLELIGHT_MAIN_SCREEN_EVT )
   {
+  debug_str("Recv SAMPLELIGHT_MAIN_SCREEN_EVT");
     giLightScreenMode = LIGHT_MAINMODE;
     zclSampleLight_LcdDisplayUpdate();
 
     return ( events ^ SAMPLELIGHT_MAIN_SCREEN_EVT );
   }
 
+ debug_str("Recv HAL_BOARD_ZLIGHT");
+ 
 #ifdef ZCL_EZMODE
 #if (defined HAL_BOARD_ZLIGHT)
   // event to start EZMode on startup with a delay
   if ( events & SAMPLELIGHT_START_EZMODE_EVT )
   {
+   debug_str("Recv HAL_BOARD_ZLIGHT");
     // Invoke EZ-Mode
     zclEZMode_InvokeData_t ezModeData;
 
@@ -508,6 +528,7 @@ uint16 zclSampleLight_event_loop( uint8 task_id, uint16 events )
   // going on to next state
   if ( events & SAMPLELIGHT_EZMODE_NEXTSTATE_EVT )
   {
+    debug_str("Recv SAMPLELIGHT_EZMODE_NEXTSTATE_EVT");
     zcl_EZModeAction ( EZMODE_ACTION_PROCESS, NULL );   // going on to next state
     return ( events ^ SAMPLELIGHT_EZMODE_NEXTSTATE_EVT );
   }
@@ -515,6 +536,7 @@ uint16 zclSampleLight_event_loop( uint8 task_id, uint16 events )
   // the overall EZMode timer expired, so we timed out
   if ( events & SAMPLELIGHT_EZMODE_TIMEOUT_EVT )
   {
+    debug_str("Recv SAMPLELIGHT_EZMODE_TIMEOUT_EVT");
     zcl_EZModeAction ( EZMODE_ACTION_TIMED_OUT, NULL ); // EZ-Mode timed out
     return ( events ^ SAMPLELIGHT_EZMODE_TIMEOUT_EVT );
   }
@@ -586,12 +608,18 @@ static void zclSampleLight_HandleKeys( byte shift, byte keys )
       {
         ezModeData.onNetwork = FALSE;     // node is not yet on the network
       }
+
+	
       ezModeData.initiator = FALSE;          // OnOffLight is a target
       ezModeData.numActiveOutClusters = 0;
       ezModeData.pActiveOutClusterIDs = NULL;
       ezModeData.numActiveInClusters = 0;
       ezModeData.pActiveOutClusterIDs = NULL;
+
+			
       zcl_InvokeEZMode( &ezModeData );
+
+			
     }
 
 #else // NOT EZ-Mode
@@ -634,6 +662,8 @@ static void zclSampleLight_HandleKeys( byte shift, byte keys )
 
       // toggle permit join
       gPermitDuration = gPermitDuration ? 0 : 0xff;
+
+      debug_str("Disable or enable joining");
 
       // Trust Center significance is always true
       ZDP_MgmtPermitJoinReq( &tmpAddr, gPermitDuration, TRUE, FALSE );
@@ -826,6 +856,7 @@ static void zclSampleLight_ProcessIdentifyTimeChange( void )
 {
   if ( zclSampleLight_IdentifyTime > 0 )
   {
+    debug_str("zclSampleLight_IdentifyTime");
     osal_start_timerEx( zclSampleLight_TaskID, SAMPLELIGHT_IDENTIFY_TIMEOUT_EVT, 1000 );
     HalLedBlink ( HAL_LED_4, 0xFF, HAL_LED_DEFAULT_DUTY_CYCLE, HAL_LED_DEFAULT_FLASH_TIME );
   }
@@ -859,6 +890,9 @@ static void zclSampleLight_ProcessIdentifyTimeChange( void )
 static void zclSampleLight_BasicResetCB( void )
 {
   NLME_LeaveReq_t leaveReq;
+
+
+  debug_str("_basicResetCB");
   // Set every field to 0
   osal_memset( &leaveReq, 0, sizeof( NLME_LeaveReq_t ) );
 
@@ -889,6 +923,8 @@ static void zclSampleLight_BasicResetCB( void )
  */
 static void zclSampleLight_IdentifyCB( zclIdentify_t *pCmd )
 {
+
+	debug_str("_identifyCB");
   zclSampleLight_IdentifyTime = pCmd->identifyTime;
   zclSampleLight_ProcessIdentifyTimeChange();
 }
@@ -906,6 +942,7 @@ static void zclSampleLight_IdentifyCB( zclIdentify_t *pCmd )
  */
 static void zclSampleLight_IdentifyQueryRspCB(  zclIdentifyQueryRsp_t *pRsp )
 {
+  debug_str("_identifyQueryRspCB");
   (void)pRsp;
 #ifdef ZCL_EZMODE
   {
@@ -932,20 +969,29 @@ static void zclSampleLight_OnOffCB( uint8 cmd )
 
   zclSampleLight_DstAddr.addr.shortAddr = pPtr->srcAddr.addr.shortAddr;
 
+  debug_str("ON_off cmd recvd");
+
 
   // Turn on the light
   if ( cmd == COMMAND_ON )
   {
     zclSampleLight_OnOff = LIGHT_ON;
+		debug_str("LIGHT_ON");
+		CUST_LED1_ON();
   }
   // Turn off the light
   else if ( cmd == COMMAND_OFF )
   {
     zclSampleLight_OnOff = LIGHT_OFF;
+		debug_str("LIGHT_OFF");
+		CUST_LED1_OFF();
   }
   // Toggle the light
   else if ( cmd == COMMAND_TOGGLE )
   {
+    debug_str("LIGHT_TOGGLE");
+		CUST_LED1_TOOGLE();
+		
     if ( zclSampleLight_OnOff == LIGHT_OFF )
     {
       zclSampleLight_OnOff = LIGHT_ON;
@@ -1438,6 +1484,8 @@ static uint8 zclSampleLight_ProcessInReadRspCmd( zclIncomingMsg_t *pInMsg )
     // Notify the originator of the results of the original read attributes
     // attempt and, for each successfull request, the value of the requested
     // attribute
+    
+		
   }
 
   return ( TRUE );
@@ -1604,6 +1652,8 @@ static void zclSampleLight_EZModeCB( zlcEZMode_State_t state, zclEZMode_CBData_t
   uint8 err;
 #endif
 
+  debug_str("zclSampleLight_EZModeCB");
+
   // time to go into identify mode
   if ( state == EZMODE_STATE_IDENTIFYING )
   {
@@ -1611,6 +1661,7 @@ static void zclSampleLight_EZModeCB( zlcEZMode_State_t state, zclEZMode_CBData_t
     HalLcdWriteString( "EZMode", HAL_LCD_LINE_2 );
 #endif
 
+    debug_str("EZMODE_STATE_IDENTIFYING");
     zclSampleLight_IdentifyTime = ( EZMODE_TIME / 1000 );  // convert to seconds
     zclSampleLight_ProcessIdentifyTimeChange();
   }
@@ -1637,6 +1688,16 @@ static void zclSampleLight_EZModeCB( zlcEZMode_State_t state, zclEZMode_CBData_t
       }
     }
 #endif
+    err = pData->sAutoClose.err;
+    if ( err == EZMODE_ERR_SUCCESS )
+    {
+       debug_str("EZMode: Success");
+    }
+    else if ( err == EZMODE_ERR_NOMATCH )
+    {
+      debug_str("EZMode: NoMatch");
+    }
+    debug_str("EZMODE_STATE_AUTOCLOSE");
   }
 
   // finished, either show DstAddr/EP, or nothing (depending on success or not)
@@ -1674,6 +1735,25 @@ static void zclSampleLight_EZModeCB( zlcEZMode_State_t state, zclEZMode_CBData_t
       }
     }
 #endif
+
+    err = pData->sFinish.err;
+    if( err == EZMODE_ERR_SUCCESS )
+    {
+      // already stated on autoclose
+      debug_str("EZMODE_STATE_FINISH EZMode: Success");
+    }
+    else if ( err == EZMODE_ERR_CANCELLED )
+    {
+      debug_str("EZMode: Cancel");
+    }
+    else if ( err == EZMODE_ERR_BAD_PARAMETER )
+    {
+      debug_str("EZMode: BadParm");
+    }
+    else if ( err == EZMODE_ERR_TIMEDOUT )
+    {
+      debug_str("EZMode: TimeOut");
+    }
     // show main UI screen 3 seconds after binding
     osal_start_timerEx( zclSampleLight_TaskID, SAMPLELIGHT_MAIN_SCREEN_EVT, 3000 );
   }

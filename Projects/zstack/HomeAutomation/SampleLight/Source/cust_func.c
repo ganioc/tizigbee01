@@ -272,8 +272,12 @@ void cust_HalKeyPoll(void){
     cust_debug_str("counter:%d", counterDefaultKey);
     debug_str("Valid Key");
     counterDefaultKey = 0;
-    
-    
+
+    CUST_LED2_ON();
+
+	osal_start_timerEx( peripheral_TaskID , PERIPH_RESET_EVENT , 2000);
+		
+    /*
     if ((osal_nv_write(3, 0, 1, &value)) == ZSUCCESS)
     {
        // 
@@ -282,7 +286,7 @@ void cust_HalKeyPoll(void){
        
        osal_start_timerEx( peripheral_TaskID , PERIPH_RESET_EVENT , 1000);
     }
-   
+    */
     
   }
   
