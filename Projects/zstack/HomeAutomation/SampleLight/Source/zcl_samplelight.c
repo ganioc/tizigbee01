@@ -91,9 +91,9 @@
 #if ( defined (ZGP_DEVICE_TARGET) || defined (ZGP_DEVICE_TARGETPLUS) \
       || defined (ZGP_DEVICE_COMBO) || defined (ZGP_DEVICE_COMBO_MIN) )
 #include "zgp_translationtable.h"
-  #if (SUPPORTED_S_FEATURE(SUPP_ZGP_FEATURE_TRANSLATION_TABLE))
-    #define ZGP_AUTO_TT
-  #endif
+#if (SUPPORTED_S_FEATURE(SUPP_ZGP_FEATURE_TRANSLATION_TABLE))
+#define ZGP_AUTO_TT
+#endif
 #endif
 
 #if (defined HAL_BOARD_ZLIGHT) || (defined HAL_PWM)
@@ -134,7 +134,7 @@
  * GLOBAL VARIABLES
  */
 byte zclSampleLight_TaskID;
-uint8 zclSampleLightSeqNum;
+uint8 zclSampleLightSeqNum = 0;
 
 
 /*********************************************************************
@@ -147,39 +147,44 @@ uint8 zclSampleLightSeqNum;
 afAddrType_t zclSampleLight_DstAddr;
 
 #ifdef ZCL_EZMODE
-static void zclSampleLight_ProcessZDOMsgs( zdoIncomingMsg_t *pMsg );
-static void zclSampleLight_EZModeCB( zlcEZMode_State_t state, zclEZMode_CBData_t *pData );
+static void zclSampleLight_ProcessZDOMsgs(zdoIncomingMsg_t *pMsg);
+static void zclSampleLight_EZModeCB(zlcEZMode_State_t state, zclEZMode_CBData_t *pData);
 
 
 // register EZ-Mode with task information (timeout events, callback, etc...)
 static const zclEZMode_RegisterData_t zclSampleLight_RegisterEZModeData =
 {
-  &zclSampleLight_TaskID,
-  SAMPLELIGHT_EZMODE_NEXTSTATE_EVT,
-  SAMPLELIGHT_EZMODE_TIMEOUT_EVT,
-  &zclSampleLightSeqNum,
-  zclSampleLight_EZModeCB
+    &zclSampleLight_TaskID,
+    SAMPLELIGHT_EZMODE_NEXTSTATE_EVT,
+    SAMPLELIGHT_EZMODE_TIMEOUT_EVT,
+    &zclSampleLightSeqNum,
+    zclSampleLight_EZModeCB
 };
 
 #else
 uint16 bindingInClusters[] =
 {
-  ZCL_CLUSTER_ID_GEN_ON_OFF
+    ZCL_CLUSTER_ID_GEN_ON_OFF
 #ifdef ZCL_LEVEL_CTRL
-  , ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL
+    , ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL
 #endif
 };
 #define ZCLSAMPLELIGHT_BINDINGLIST (sizeof(bindingInClusters) / sizeof(bindingInClusters[0]))
 
 #endif  // ZCL_EZMODE
 
+#ifdef ZCL_REPORT
+static void zclSampleLight_ProcessInReportCmd(zclIncomingMsg_t *pInMsg);
+#endif  //ZCL_REPORT
+
+
 // Test Endpoint to allow SYS_APP_MSGs
 static endPointDesc_t sampleLight_TestEp =
 {
-  SAMPLELIGHT_ENDPOINT,
-  &zclSampleLight_TaskID,
-  (SimpleDescriptionFormat_t *)NULL,  // No Simple description for this test endpoint
-  (afNetworkLatencyReq_t)0            // No Network Latency req
+    SAMPLELIGHT_ENDPOINT,
+    &zclSampleLight_TaskID,
+    (SimpleDescriptionFormat_t *)NULL,  // No Simple description for this test endpoint
+    (afNetworkLatencyReq_t)0            // No Network Latency req
 };
 
 uint8 giLightScreenMode = LIGHT_MAINMODE;   // display the main screen mode first
@@ -200,50 +205,50 @@ uint8 zclSampleLight_LevelLastLevel;  // to save the Current Level before the li
 /*********************************************************************
  * LOCAL FUNCTIONS
  */
-static void zclSampleLight_HandleKeys( byte shift, byte keys );
-static void zclSampleLight_BasicResetCB( void );
-static void zclSampleLight_IdentifyCB( zclIdentify_t *pCmd );
-static void zclSampleLight_IdentifyQueryRspCB( zclIdentifyQueryRsp_t *pRsp );
-static void zclSampleLight_OnOffCB( uint8 cmd );
-static void zclSampleLight_ProcessIdentifyTimeChange( void );
+static void zclSampleLight_HandleKeys(byte shift, byte keys);
+static void zclSampleLight_BasicResetCB(void);
+static void zclSampleLight_IdentifyCB(zclIdentify_t *pCmd);
+static void zclSampleLight_IdentifyQueryRspCB(zclIdentifyQueryRsp_t *pRsp);
+static void zclSampleLight_OnOffCB(uint8 cmd);
+static void zclSampleLight_ProcessIdentifyTimeChange(void);
 #ifdef ZCL_LEVEL_CTRL
-static void zclSampleLight_LevelControlMoveToLevelCB( zclLCMoveToLevel_t *pCmd );
-static void zclSampleLight_LevelControlMoveCB( zclLCMove_t *pCmd );
-static void zclSampleLight_LevelControlStepCB( zclLCStep_t *pCmd );
-static void zclSampleLight_LevelControlStopCB( void );
-static void zclSampleLight_DefaultMove( void );
-static uint32 zclSampleLight_TimeRateHelper( uint8 newLevel );
-static uint16 zclSampleLight_GetTime ( uint8 level, uint16 time );
-static void zclSampleLight_MoveBasedOnRate( uint8 newLevel, uint32 rate );
-static void zclSampleLight_MoveBasedOnTime( uint8 newLevel, uint16 time );
-static void zclSampleLight_AdjustLightLevel( void );
+static void zclSampleLight_LevelControlMoveToLevelCB(zclLCMoveToLevel_t *pCmd);
+static void zclSampleLight_LevelControlMoveCB(zclLCMove_t *pCmd);
+static void zclSampleLight_LevelControlStepCB(zclLCStep_t *pCmd);
+static void zclSampleLight_LevelControlStopCB(void);
+static void zclSampleLight_DefaultMove(void);
+static uint32 zclSampleLight_TimeRateHelper(uint8 newLevel);
+static uint16 zclSampleLight_GetTime(uint8 level, uint16 time);
+static void zclSampleLight_MoveBasedOnRate(uint8 newLevel, uint32 rate);
+static void zclSampleLight_MoveBasedOnTime(uint8 newLevel, uint16 time);
+static void zclSampleLight_AdjustLightLevel(void);
 #endif
 
 // app display functions
-static void zclSampleLight_LcdDisplayUpdate( void );
+static void zclSampleLight_LcdDisplayUpdate(void);
 #ifdef LCD_SUPPORTED
-static void zclSampleLight_LcdDisplayMainMode( void );
-static void zclSampleLight_LcdDisplayHelpMode( void );
+static void zclSampleLight_LcdDisplayMainMode(void);
+static void zclSampleLight_LcdDisplayHelpMode(void);
 #endif
-static void zclSampleLight_DisplayLight( void );
+static void zclSampleLight_DisplayLight(void);
 
 #if (defined HAL_BOARD_ZLIGHT) || (defined HAL_PWM)
-void zclSampleLight_UpdateLampLevel( uint8 level );
+void zclSampleLight_UpdateLampLevel(uint8 level);
 #endif
 
 // Functions to process ZCL Foundation incoming Command/Response messages
-static void zclSampleLight_ProcessIncomingMsg( zclIncomingMsg_t *msg );
+static void zclSampleLight_ProcessIncomingMsg(zclIncomingMsg_t *msg);
 #ifdef ZCL_READ
-static uint8 zclSampleLight_ProcessInReadRspCmd( zclIncomingMsg_t *pInMsg );
+static uint8 zclSampleLight_ProcessInReadRspCmd(zclIncomingMsg_t *pInMsg);
 #endif
 #ifdef ZCL_WRITE
-static uint8 zclSampleLight_ProcessInWriteRspCmd( zclIncomingMsg_t *pInMsg );
+static uint8 zclSampleLight_ProcessInWriteRspCmd(zclIncomingMsg_t *pInMsg);
 #endif
-static uint8 zclSampleLight_ProcessInDefaultRspCmd( zclIncomingMsg_t *pInMsg );
+static uint8 zclSampleLight_ProcessInDefaultRspCmd(zclIncomingMsg_t *pInMsg);
 #ifdef ZCL_DISCOVER
-static uint8 zclSampleLight_ProcessInDiscCmdsRspCmd( zclIncomingMsg_t *pInMsg );
-static uint8 zclSampleLight_ProcessInDiscAttrsRspCmd( zclIncomingMsg_t *pInMsg );
-static uint8 zclSampleLight_ProcessInDiscAttrsExtRspCmd( zclIncomingMsg_t *pInMsg );
+static uint8 zclSampleLight_ProcessInDiscCmdsRspCmd(zclIncomingMsg_t *pInMsg);
+static uint8 zclSampleLight_ProcessInDiscAttrsRspCmd(zclIncomingMsg_t *pInMsg);
+static uint8 zclSampleLight_ProcessInDiscAttrsExtRspCmd(zclIncomingMsg_t *pInMsg);
 #endif
 
 /*********************************************************************
@@ -257,9 +262,9 @@ const char sSwEZMode[]     = "SW2: EZ-Mode";
 char sSwHelp[]             = "SW5: Help       ";  // last character is * if NWK open
 const char sLightOn[]      = "    LIGHT ON ";
 const char sLightOff[]     = "    LIGHT OFF";
- #if ZCL_LEVEL_CTRL
- char sLightLevel[]        = "    LEVEL ###"; // displays level 1-254
- #endif
+#if ZCL_LEVEL_CTRL
+char sLightLevel[]        = "    LEVEL ###"; // displays level 1-254
+#endif
 #endif
 
 /*********************************************************************
@@ -267,42 +272,54 @@ const char sLightOff[]     = "    LIGHT OFF";
  */
 static zclGeneral_AppCallbacks_t zclSampleLight_CmdCallbacks =
 {
-  zclSampleLight_BasicResetCB,            // Basic Cluster Reset command
-  zclSampleLight_IdentifyCB,              // Identify command
+    zclSampleLight_BasicResetCB,            // Basic Cluster Reset command
+    zclSampleLight_IdentifyCB,              // Identify command
 #ifdef ZCL_EZMODE
-  NULL,                                   // Identify EZ-Mode Invoke command
-  NULL,                                   // Identify Update Commission State command
+    NULL,                                   // Identify EZ-Mode Invoke command
+    NULL,                                   // Identify Update Commission State command
 #endif
-  NULL,                                   // Identify Trigger Effect command
-  zclSampleLight_IdentifyQueryRspCB,      // Identify Query Response command
-  zclSampleLight_OnOffCB,                 // On/Off cluster commands
-  NULL,                                   // On/Off cluster enhanced command Off with Effect
-  NULL,                                   // On/Off cluster enhanced command On with Recall Global Scene
-  NULL,                                   // On/Off cluster enhanced command On with Timed Off
+    NULL,                                   // Identify Trigger Effect command
+    zclSampleLight_IdentifyQueryRspCB,      // Identify Query Response command
+    zclSampleLight_OnOffCB,                 // On/Off cluster commands
+    NULL,                                   // On/Off cluster enhanced command Off with Effect
+    NULL,                                   // On/Off cluster enhanced command On with Recall Global Scene
+    NULL,                                   // On/Off cluster enhanced command On with Timed Off
 #ifdef ZCL_LEVEL_CTRL
-  zclSampleLight_LevelControlMoveToLevelCB, // Level Control Move to Level command
-  zclSampleLight_LevelControlMoveCB,        // Level Control Move command
-  zclSampleLight_LevelControlStepCB,        // Level Control Step command
-  zclSampleLight_LevelControlStopCB,        // Level Control Stop command
+    zclSampleLight_LevelControlMoveToLevelCB, // Level Control Move to Level command
+    zclSampleLight_LevelControlMoveCB,        // Level Control Move command
+    zclSampleLight_LevelControlStepCB,        // Level Control Step command
+    zclSampleLight_LevelControlStopCB,        // Level Control Stop command
 #endif
 #ifdef ZCL_GROUPS
-  NULL,                                   // Group Response commands
+    NULL,                                   // Group Response commands
 #endif
 #ifdef ZCL_SCENES
-  NULL,                                  // Scene Store Request command
-  NULL,                                  // Scene Recall Request command
-  NULL,                                  // Scene Response command
+    NULL,                                  // Scene Store Request command
+    NULL,                                  // Scene Recall Request command
+    NULL,                                  // Scene Response command
 #endif
 #ifdef ZCL_ALARMS
-  NULL,                                  // Alarm (Response) commands
+    NULL,                                  // Alarm (Response) commands
 #endif
 #ifdef SE_UK_EXT
-  NULL,                                  // Get Event Log command
-  NULL,                                  // Publish Event Log command
+    NULL,                                  // Get Event Log command
+    NULL,                                  // Publish Event Log command
 #endif
-  NULL,                                  // RSSI Location command
-  NULL                                   // RSSI Location Response command
+    NULL,                                  // RSSI Location command
+    NULL                                   // RSSI Location Response command
 };
+
+uint8 getSampleLightSequenceNum(void)
+{
+    zclSampleLightSeqNum++;
+
+    if(zclSampleLightSeqNum >= 255)
+    {
+        zclSampleLightSeqNum = 0;
+    }
+    return zclSampleLightSeqNum;
+}
+
 
 /*********************************************************************
  * @fn          zclSampleLight_Init
@@ -313,88 +330,88 @@ static zclGeneral_AppCallbacks_t zclSampleLight_CmdCallbacks =
  *
  * @return      none
  */
-void zclSampleLight_Init( byte task_id )
+void zclSampleLight_Init(byte task_id)
 {
-  zclSampleLight_TaskID = task_id;
+    zclSampleLight_TaskID = task_id;
 
-  // Set destination address to indirect
-  zclSampleLight_DstAddr.addrMode = (afAddrMode_t)AddrNotPresent;
-  zclSampleLight_DstAddr.endPoint = 0;
-  zclSampleLight_DstAddr.addr.shortAddr = 0;
+    // Set destination address to indirect
+    zclSampleLight_DstAddr.addrMode = (afAddrMode_t)AddrNotPresent;
+    zclSampleLight_DstAddr.endPoint = 0;
+    zclSampleLight_DstAddr.addr.shortAddr = 0;
 
-  // This app is part of the Home Automation Profile
-  zclHA_Init( &zclSampleLight_SimpleDesc );
+    // This app is part of the Home Automation Profile
+    zclHA_Init(&zclSampleLight_SimpleDesc);
 
-  // Register the ZCL General Cluster Library callback functions
-  zclGeneral_RegisterCmdCallbacks( SAMPLELIGHT_ENDPOINT, &zclSampleLight_CmdCallbacks );
+    // Register the ZCL General Cluster Library callback functions
+    zclGeneral_RegisterCmdCallbacks(SAMPLELIGHT_ENDPOINT, &zclSampleLight_CmdCallbacks);
 
-  // Register the application's attribute list
-  zcl_registerAttrList( SAMPLELIGHT_ENDPOINT, zclSampleLight_NumAttributes, zclSampleLight_Attrs );
+    // Register the application's attribute list
+    zcl_registerAttrList(SAMPLELIGHT_ENDPOINT, zclSampleLight_NumAttributes, zclSampleLight_Attrs);
 
-  // Register the Application to receive the unprocessed Foundation command/response messages
-  zcl_registerForMsg( zclSampleLight_TaskID );
+    // Register the Application to receive the unprocessed Foundation command/response messages
+    zcl_registerForMsg(zclSampleLight_TaskID);
 
 #ifdef ZCL_DISCOVER
-  // Register the application's command list
-  zcl_registerCmdList( SAMPLELIGHT_ENDPOINT, zclCmdsArraySize, zclSampleLight_Cmds );
+    // Register the application's command list
+    zcl_registerCmdList(SAMPLELIGHT_ENDPOINT, zclCmdsArraySize, zclSampleLight_Cmds);
 #endif
 
-  // Register for all key events - This app will handle all key events
-  RegisterForKeys( zclSampleLight_TaskID );
+    // Register for all key events - This app will handle all key events
+    RegisterForKeys(zclSampleLight_TaskID);
 
-  // Register for a test endpoint，可以用来做测试，或增加新功能
-  afRegister( &sampleLight_TestEp );
+    // Register for a test endpoint，可以用来做测试，或增加新功能
+    afRegister(&sampleLight_TestEp);
 
 #ifdef ZCL_EZMODE
-  // Register EZ-Mode
-  zcl_RegisterEZMode( &zclSampleLight_RegisterEZModeData );
+    // Register EZ-Mode
+    zcl_RegisterEZMode(&zclSampleLight_RegisterEZModeData);
 
-  // Register with the ZDO to receive Match Descriptor Responses
-  ZDO_RegisterForZDOMsg(task_id, Match_Desc_rsp);
+    // Register with the ZDO to receive Match Descriptor Responses
+    ZDO_RegisterForZDOMsg(task_id, Match_Desc_rsp);
 #endif
 
 
 #if (defined HAL_BOARD_ZLIGHT) || (defined HAL_PWM)
-  HalTimer1Init( 0 );
-  halTimer1SetChannelDuty( WHITE_LED, 0 );
-  halTimer1SetChannelDuty( RED_LED, 0 );
-  halTimer1SetChannelDuty( BLUE_LED, 0 );
-  halTimer1SetChannelDuty( GREEN_LED, 0 );
+    HalTimer1Init(0);
+    halTimer1SetChannelDuty(WHITE_LED, 0);
+    halTimer1SetChannelDuty(RED_LED, 0);
+    halTimer1SetChannelDuty(BLUE_LED, 0);
+    halTimer1SetChannelDuty(GREEN_LED, 0);
 
-  // find if we are already on a network from NV_RESTORE
-  uint8 state;
-  NLME_GetRequest( nwkNwkState, 0, &state );
+    // find if we are already on a network from NV_RESTORE
+    uint8 state;
+    NLME_GetRequest(nwkNwkState, 0, &state);
 
-  if ( state < NWK_ENDDEVICE )
-  {
-    // Start EZMode on Start up to avoid button press
-    osal_start_timerEx( zclSampleLight_TaskID, SAMPLELIGHT_START_EZMODE_EVT, 500 );
-  }
+    if(state < NWK_ENDDEVICE)
+    {
+        // Start EZMode on Start up to avoid button press
+        osal_start_timerEx(zclSampleLight_TaskID, SAMPLELIGHT_START_EZMODE_EVT, 500);
+    }
 #if ZCL_LEVEL_CTRL
-  zclSampleLight_DefaultMove();
+    zclSampleLight_DefaultMove();
 #endif
 #endif // #if (defined HAL_BOARD_ZLIGHT) || (defined HAL_PWM)
 
 #ifdef ZCL_DIAGNOSTIC
-  // Register the application's callback function to read/write attribute data.
-  // This is only required when the attribute data format is unknown to ZCL.
-  zcl_registerReadWriteCB( SAMPLELIGHT_ENDPOINT, zclDiagnostic_ReadWriteAttrCB, NULL );
+    // Register the application's callback function to read/write attribute data.
+    // This is only required when the attribute data format is unknown to ZCL.
+    zcl_registerReadWriteCB(SAMPLELIGHT_ENDPOINT, zclDiagnostic_ReadWriteAttrCB, NULL);
 
-  if ( zclDiagnostic_InitStats() == ZSuccess )
-  {
-    // Here the user could start the timer to save Diagnostics to NV
-  }
+    if(zclDiagnostic_InitStats() == ZSuccess)
+    {
+        // Here the user could start the timer to save Diagnostics to NV
+    }
 #endif
 
 #ifdef LCD_SUPPORTED
-  HalLcdWriteString ( (char *)sDeviceName, HAL_LCD_LINE_3 );
+    HalLcdWriteString((char *)sDeviceName, HAL_LCD_LINE_3);
 #endif  // LCD_SUPPORTED
 
 #ifdef ZGP_AUTO_TT
-  zgpTranslationTable_RegisterEP ( &zclSampleLight_SimpleDesc );
+    zgpTranslationTable_RegisterEP(&zclSampleLight_SimpleDesc);
 #endif
 
-  debug_str("End of _Init()");
+    debug_str("End of _Init()");
 }
 
 /*********************************************************************
@@ -406,152 +423,155 @@ void zclSampleLight_Init( byte task_id )
  *
  * @return      none
  */
-uint16 zclSampleLight_event_loop( uint8 task_id, uint16 events )
+uint16 zclSampleLight_event_loop(uint8 task_id, uint16 events)
 {
-  afIncomingMSGPacket_t *MSGpkt;
+    afIncomingMSGPacket_t *MSGpkt;
 
-  (void)task_id;  // Intentionally unreferenced parameter
+    (void)task_id;  // Intentionally unreferenced parameter
 
-  if ( events & SYS_EVENT_MSG )
-  {
-    debug_str("Recv zclSampleLight_event_loop SYS_EVENT_MSG");
-    while ( (MSGpkt = (afIncomingMSGPacket_t *)osal_msg_receive( zclSampleLight_TaskID )) )
+    if(events & SYS_EVENT_MSG)
     {
-      debug_str("Recv zclSampleLight_event_loop");
-      switch ( MSGpkt->hdr.event )
-      {
+        //debug_str("Recv zclSampleLight_event_loop SYS_EVENT_MSG");
+        while((MSGpkt = (afIncomingMSGPacket_t *)osal_msg_receive(zclSampleLight_TaskID)))
+        {
+            //cust_debug_str("zclSLel %d", MSGpkt->hdr.event);
+            switch(MSGpkt->hdr.event)
+            {
 #ifdef ZCL_EZMODE
-        case ZDO_CB_MSG:
-					debug_str("Recv ZDO_CB_MSG");
-          zclSampleLight_ProcessZDOMsgs( (zdoIncomingMsg_t *)MSGpkt );
-          break;
+                case ZDO_CB_MSG:
+                    //debug_str("Recv ZDO_CB_MSG");
+                    zclSampleLight_ProcessZDOMsgs((zdoIncomingMsg_t *)MSGpkt);
+                    break;
 #endif
-        case ZCL_INCOMING_MSG:
-		   debug_str("Recv zcl_incoming_msg");
-          // Incoming ZCL Foundation command/response messages
-          zclSampleLight_ProcessIncomingMsg( (zclIncomingMsg_t *)MSGpkt );
-          break;
+                case ZCL_INCOMING_MSG:
+                    //cust_debug_str("Recv zcl_incoming_msg");
+                    // Incoming ZCL Foundation command/response messages
+                    zclSampleLight_ProcessIncomingMsg((zclIncomingMsg_t *)MSGpkt);
+                    break;
 
-        case KEY_CHANGE:
-		   debug_str("Recv KEY_CHANGE");
-          zclSampleLight_HandleKeys( ((keyChange_t *)MSGpkt)->state, ((keyChange_t *)MSGpkt)->keys );
-          break;
+                case KEY_CHANGE:
+                    //debug_str("Recv KEY_CHANGE");
+                    zclSampleLight_HandleKeys(((keyChange_t *)MSGpkt)->state, ((keyChange_t *)MSGpkt)->keys);
+                    break;
 
-        case ZDO_STATE_CHANGE:
-		   debug_str("Recv ZDO_STATE_CHANGE");
-          zclSampleLight_NwkState = (devStates_t)(MSGpkt->hdr.status);
+                case ZDO_STATE_CHANGE:
+                    debug_str("Recv ZDO_STATE_CHANGE");
+                    zclSampleLight_NwkState = (devStates_t)(MSGpkt->hdr.status);
 
-          // now on the network
-          if ( (zclSampleLight_NwkState == DEV_ZB_COORD) ||
-               (zclSampleLight_NwkState == DEV_ROUTER)   ||
-               (zclSampleLight_NwkState == DEV_END_DEVICE) )
-          {
-            cust_debug_str("zclSampleLight_NwkState %d", zclSampleLight_NwkState);
-            giLightScreenMode = LIGHT_MAINMODE;
-            zclSampleLight_LcdDisplayUpdate();
+                    // now on the network
+                    if((zclSampleLight_NwkState == DEV_ZB_COORD) ||
+                       (zclSampleLight_NwkState == DEV_ROUTER)   ||
+                       (zclSampleLight_NwkState == DEV_END_DEVICE))
+                    {
+                        cust_debug_str("zclSampleLight_NwkState %d", zclSampleLight_NwkState);
+                        giLightScreenMode = LIGHT_MAINMODE;
+                        zclSampleLight_LcdDisplayUpdate();
 #ifdef ZCL_EZMODE
-            zcl_EZModeAction( EZMODE_ACTION_NETWORK_STARTED, NULL );
-			  cust_debug_str("EZMODE_ACTION_NETWORK_STARTED");
+                        zcl_EZModeAction(EZMODE_ACTION_NETWORK_STARTED, NULL);
+                        cust_debug_str("EZMODE_ACTION_NETWORK_STARTED");
 #endif // ZCL_EZMODE
-          }
-          break;
-        case AF_DATA_CONFIRM_CMD:
-					debug_str("Recv data_confirm_cmd");
-        default:
-				cust_debug_str("zclSampleLight_event_loop %d unrecognized", MSGpkt->hdr.event);
-          break;
-      }
+                    }
+                    break;
+                case AF_DATA_CONFIRM_CMD:
+                    
+                    
+                    debug_str("Recv af_data_confirm_cmd");
+                    break;
+                default:
+                    cust_debug_str("zclSampleLight_event_loop %d unrecognized", MSGpkt->hdr.event);
+                    break;
+            }
 
-      // Release the memory
-      osal_msg_deallocate( (uint8 *)MSGpkt );
+            // Release the memory
+            osal_msg_deallocate((uint8 *)MSGpkt);
+        }
+
+        // return unprocessed events
+        return (events ^ SYS_EVENT_MSG);
     }
 
-    // return unprocessed events
-    return (events ^ SYS_EVENT_MSG);
-  }
+    debug_str("Recv zclSampleLight_event_loop middle");
 
- debug_str("Recv zclSampleLight_event_loop middle");
- 
-  if ( events & SAMPLELIGHT_IDENTIFY_TIMEOUT_EVT )
-  {
-    debug_str("Recv SAMPLELIGHT_IDENTIFY_TIMEOUT_EVT");
-    if ( zclSampleLight_IdentifyTime > 0 )
-      zclSampleLight_IdentifyTime--;
-    zclSampleLight_ProcessIdentifyTimeChange();
+    if(events & SAMPLELIGHT_IDENTIFY_TIMEOUT_EVT)
+    {
+        debug_str("Recv SAMPLELIGHT_IDENTIFY_TIMEOUT_EVT");
+        if(zclSampleLight_IdentifyTime > 0)
+            zclSampleLight_IdentifyTime--;
+        zclSampleLight_ProcessIdentifyTimeChange();
 
-    return ( events ^ SAMPLELIGHT_IDENTIFY_TIMEOUT_EVT );
-  }
+        return (events ^ SAMPLELIGHT_IDENTIFY_TIMEOUT_EVT);
+    }
 
-  if ( events & SAMPLELIGHT_MAIN_SCREEN_EVT )
-  {
-  debug_str("Recv SAMPLELIGHT_MAIN_SCREEN_EVT");
-    giLightScreenMode = LIGHT_MAINMODE;
-    zclSampleLight_LcdDisplayUpdate();
+    if(events & SAMPLELIGHT_MAIN_SCREEN_EVT)
+    {
+        debug_str("Recv SAMPLELIGHT_MAIN_SCREEN_EVT");
+        giLightScreenMode = LIGHT_MAINMODE;
+        zclSampleLight_LcdDisplayUpdate();
 
-    return ( events ^ SAMPLELIGHT_MAIN_SCREEN_EVT );
-  }
+        return (events ^ SAMPLELIGHT_MAIN_SCREEN_EVT);
+    }
 
- debug_str("Recv HAL_BOARD_ZLIGHT");
- 
+    debug_str("Recv HAL_BOARD_ZLIGHT");
+
 #ifdef ZCL_EZMODE
 #if (defined HAL_BOARD_ZLIGHT)
-  // event to start EZMode on startup with a delay
-  if ( events & SAMPLELIGHT_START_EZMODE_EVT )
-  {
-   debug_str("Recv HAL_BOARD_ZLIGHT");
-    // Invoke EZ-Mode
-    zclEZMode_InvokeData_t ezModeData;
-
-    // Invoke EZ-Mode
-    ezModeData.endpoint = SAMPLELIGHT_ENDPOINT; // endpoint on which to invoke EZ-Mode
-    if ( (zclSampleLight_NwkState == DEV_ZB_COORD) ||
-         (zclSampleLight_NwkState == DEV_ROUTER)   ||
-         (zclSampleLight_NwkState == DEV_END_DEVICE) )
+    // event to start EZMode on startup with a delay
+    if(events & SAMPLELIGHT_START_EZMODE_EVT)
     {
-      ezModeData.onNetwork = TRUE;      // node is already on the network
-    }
-    else
-    {
-      ezModeData.onNetwork = FALSE;     // node is not yet on the network
-    }
-    ezModeData.initiator = FALSE;          // OnOffLight is a target
-    ezModeData.numActiveOutClusters = 0;
-    ezModeData.pActiveOutClusterIDs = NULL;
-    ezModeData.numActiveInClusters = 0;
-    ezModeData.pActiveOutClusterIDs = NULL;
-    zcl_InvokeEZMode( &ezModeData );
+        debug_str("Recv HAL_BOARD_ZLIGHT");
+        // Invoke EZ-Mode
+        zclEZMode_InvokeData_t ezModeData;
 
-    return ( events ^ SAMPLELIGHT_START_EZMODE_EVT );
-  }
+        // Invoke EZ-Mode
+        ezModeData.endpoint = SAMPLELIGHT_ENDPOINT; // endpoint on which to invoke EZ-Mode
+        if((zclSampleLight_NwkState == DEV_ZB_COORD) ||
+           (zclSampleLight_NwkState == DEV_ROUTER)   ||
+           (zclSampleLight_NwkState == DEV_END_DEVICE))
+        {
+            ezModeData.onNetwork = TRUE;      // node is already on the network
+        }
+        else
+        {
+            ezModeData.onNetwork = FALSE;     // node is not yet on the network
+        }
+        ezModeData.initiator = FALSE;          // OnOffLight is a target
+        ezModeData.numActiveOutClusters = 0;
+        ezModeData.pActiveOutClusterIDs = NULL;
+        ezModeData.numActiveInClusters = 0;
+        ezModeData.pActiveOutClusterIDs = NULL;
+        zcl_InvokeEZMode(&ezModeData);
+
+        return (events ^ SAMPLELIGHT_START_EZMODE_EVT);
+    }
 #endif // #if (defined HAL_BOARD_ZLIGHT)
 
-  // going on to next state
-  if ( events & SAMPLELIGHT_EZMODE_NEXTSTATE_EVT )
-  {
-    debug_str("Recv SAMPLELIGHT_EZMODE_NEXTSTATE_EVT");
-    zcl_EZModeAction ( EZMODE_ACTION_PROCESS, NULL );   // going on to next state
-    return ( events ^ SAMPLELIGHT_EZMODE_NEXTSTATE_EVT );
-  }
+    // going on to next state
+    if(events & SAMPLELIGHT_EZMODE_NEXTSTATE_EVT)
+    {
+        debug_str("Recv SAMPLELIGHT_EZMODE_NEXTSTATE_EVT");
+        zcl_EZModeAction(EZMODE_ACTION_PROCESS, NULL);      // going on to next state
+        return (events ^ SAMPLELIGHT_EZMODE_NEXTSTATE_EVT);
+    }
 
-  // the overall EZMode timer expired, so we timed out
-  if ( events & SAMPLELIGHT_EZMODE_TIMEOUT_EVT )
-  {
-    debug_str("Recv SAMPLELIGHT_EZMODE_TIMEOUT_EVT");
-    zcl_EZModeAction ( EZMODE_ACTION_TIMED_OUT, NULL ); // EZ-Mode timed out
-    return ( events ^ SAMPLELIGHT_EZMODE_TIMEOUT_EVT );
-  }
+    // the overall EZMode timer expired, so we timed out
+    if(events & SAMPLELIGHT_EZMODE_TIMEOUT_EVT)
+    {
+        debug_str("Recv SAMPLELIGHT_EZMODE_TIMEOUT_EVT");
+        zcl_EZModeAction(EZMODE_ACTION_TIMED_OUT, NULL);    // EZ-Mode timed out
+        return (events ^ SAMPLELIGHT_EZMODE_TIMEOUT_EVT);
+    }
 #endif // ZLC_EZMODE
 
 #ifdef ZCL_LEVEL_CTRL
-  if ( events & SAMPLELIGHT_LEVEL_CTRL_EVT )
-  {
-    zclSampleLight_AdjustLightLevel();
-    return ( events ^ SAMPLELIGHT_LEVEL_CTRL_EVT );
-  }
+    if(events & SAMPLELIGHT_LEVEL_CTRL_EVT)
+    {
+        zclSampleLight_AdjustLightLevel();
+        return (events ^ SAMPLELIGHT_LEVEL_CTRL_EVT);
+    }
 #endif
 
-  // Discard unknown events
-  return 0;
+    // Discard unknown events
+    return 0;
 }
 
 /*********************************************************************
@@ -568,120 +588,120 @@ uint16 zclSampleLight_event_loop( uint8 task_id, uint16 events )
  *
  * @return  none
  */
-static void zclSampleLight_HandleKeys( byte shift, byte keys )
+static void zclSampleLight_HandleKeys(byte shift, byte keys)
 {
-  if ( keys & HAL_KEY_SW_1 )
-  {
-    giLightScreenMode = LIGHT_MAINMODE;
+    if(keys & HAL_KEY_SW_1)
+    {
+        giLightScreenMode = LIGHT_MAINMODE;
 
-    // toggle local light immediately
-    zclSampleLight_OnOff = zclSampleLight_OnOff ? LIGHT_OFF : LIGHT_ON;
+        // toggle local light immediately
+        zclSampleLight_OnOff = zclSampleLight_OnOff ? LIGHT_OFF : LIGHT_ON;
 #ifdef ZCL_LEVEL_CTRL
-    zclSampleLight_LevelCurrentLevel = zclSampleLight_OnOff ? zclSampleLight_LevelOnLevel : ATTR_LEVEL_MIN_LEVEL;
+        zclSampleLight_LevelCurrentLevel = zclSampleLight_OnOff ? zclSampleLight_LevelOnLevel : ATTR_LEVEL_MIN_LEVEL;
 #endif
-  }
+    }
 
-  if ( keys & HAL_KEY_SW_2 )
-  {
+    if(keys & HAL_KEY_SW_2)
+    {
 #if (defined HAL_BOARD_ZLIGHT)
 
-    zclSampleLight_BasicResetCB();
+        zclSampleLight_BasicResetCB();
 
 #else
 
-    giLightScreenMode = LIGHT_MAINMODE;
+        giLightScreenMode = LIGHT_MAINMODE;
 
 #ifdef ZCL_EZMODE
-    {
-      // Invoke EZ-Mode
-      zclEZMode_InvokeData_t ezModeData;
+        {
+            // Invoke EZ-Mode
+            zclEZMode_InvokeData_t ezModeData;
 
-      // Invoke EZ-Mode
-      ezModeData.endpoint = SAMPLELIGHT_ENDPOINT; // endpoint on which to invoke EZ-Mode
-      if ( (zclSampleLight_NwkState == DEV_ZB_COORD) ||
-          (zclSampleLight_NwkState == DEV_ROUTER)   ||
-            (zclSampleLight_NwkState == DEV_END_DEVICE) )
-      {
-        ezModeData.onNetwork = TRUE;      // node is already on the network
-      }
-      else
-      {
-        ezModeData.onNetwork = FALSE;     // node is not yet on the network
-      }
+            // Invoke EZ-Mode
+            ezModeData.endpoint = SAMPLELIGHT_ENDPOINT; // endpoint on which to invoke EZ-Mode
+            if((zclSampleLight_NwkState == DEV_ZB_COORD) ||
+               (zclSampleLight_NwkState == DEV_ROUTER)   ||
+               (zclSampleLight_NwkState == DEV_END_DEVICE))
+            {
+                ezModeData.onNetwork = TRUE;      // node is already on the network
+            }
+            else
+            {
+                ezModeData.onNetwork = FALSE;     // node is not yet on the network
+            }
 
-	
-      ezModeData.initiator = FALSE;          // OnOffLight is a target
-      ezModeData.numActiveOutClusters = 0;
-      ezModeData.pActiveOutClusterIDs = NULL;
-      ezModeData.numActiveInClusters = 0;
-      ezModeData.pActiveOutClusterIDs = NULL;
 
-			
-      zcl_InvokeEZMode( &ezModeData );
+            ezModeData.initiator = FALSE;          // OnOffLight is a target
+            ezModeData.numActiveOutClusters = 0;
+            ezModeData.pActiveOutClusterIDs = NULL;
+            ezModeData.numActiveInClusters = 0;
+            ezModeData.pActiveOutClusterIDs = NULL;
 
-			
-    }
+
+            zcl_InvokeEZMode(&ezModeData);
+
+
+        }
 
 #else // NOT EZ-Mode
-    {
-      zAddrType_t dstAddr;
-      HalLedSet ( HAL_LED_4, HAL_LED_MODE_OFF );
+        {
+            zAddrType_t dstAddr;
+            HalLedSet(HAL_LED_4, HAL_LED_MODE_OFF);
 
-      // Initiate an End Device Bind Request, this bind request will
-      // only use a cluster list that is important to binding.
-      dstAddr.addrMode = afAddr16Bit;
-      dstAddr.addr.shortAddr = 0;   // Coordinator makes the match
-      ZDP_EndDeviceBindReq( &dstAddr, NLME_GetShortAddr(),
-                           SAMPLELIGHT_ENDPOINT,
-                           ZCL_HA_PROFILE_ID,
-                           ZCLSAMPLELIGHT_BINDINGLIST, bindingInClusters,
-                           0, NULL,   // No Outgoing clusters to bind
-                           TRUE );
-    }
+            // Initiate an End Device Bind Request, this bind request will
+            // only use a cluster list that is important to binding.
+            dstAddr.addrMode = afAddr16Bit;
+            dstAddr.addr.shortAddr = 0;   // Coordinator makes the match
+            ZDP_EndDeviceBindReq(&dstAddr, NLME_GetShortAddr(),
+                                 SAMPLELIGHT_ENDPOINT,
+                                 ZCL_HA_PROFILE_ID,
+                                 ZCLSAMPLELIGHT_BINDINGLIST, bindingInClusters,
+                                 0, NULL,   // No Outgoing clusters to bind
+                                 TRUE);
+        }
 #endif // ZCL_EZMODE
 #endif // HAL_BOARD_ZLIGHT
-  }
-
-  if ( keys & HAL_KEY_SW_3 )
-  {
-    NLME_SendNetworkStatus( zclSampleLight_DstAddr.addr.shortAddr,
-                       NLME_GetShortAddr(), NWKSTAT_NONTREE_LINK_FAILURE, FALSE );
-  }
-
-  if ( keys & HAL_KEY_SW_4 )
-  {
-    giLightScreenMode = LIGHT_MAINMODE;
-
-    if ( ( zclSampleLight_NwkState == DEV_ZB_COORD ) ||
-          ( zclSampleLight_NwkState == DEV_ROUTER ) )
-    {
-      zAddrType_t tmpAddr;
-
-      tmpAddr.addrMode = Addr16Bit;
-      tmpAddr.addr.shortAddr = NLME_GetShortAddr();
-
-      // toggle permit join
-      gPermitDuration = gPermitDuration ? 0 : 0xff;
-
-      debug_str("Disable or enable joining");
-
-      // Trust Center significance is always true
-      ZDP_MgmtPermitJoinReq( &tmpAddr, gPermitDuration, TRUE, FALSE );
     }
-  }
 
-  // Shift F5 does a Basic Reset (factory defaults)
-  if ( shift && ( keys & HAL_KEY_SW_5 ) )
-  {
-    zclSampleLight_BasicResetCB();
-  }
-  else if ( keys & HAL_KEY_SW_5 )
-  {
-    giLightScreenMode = giLightScreenMode ? LIGHT_MAINMODE : LIGHT_HELPMODE;
-  }
+    if(keys & HAL_KEY_SW_3)
+    {
+        NLME_SendNetworkStatus(zclSampleLight_DstAddr.addr.shortAddr,
+                               NLME_GetShortAddr(), NWKSTAT_NONTREE_LINK_FAILURE, FALSE);
+    }
 
-  // update the display, including the light
-  zclSampleLight_LcdDisplayUpdate();
+    if(keys & HAL_KEY_SW_4)
+    {
+        giLightScreenMode = LIGHT_MAINMODE;
+
+        if((zclSampleLight_NwkState == DEV_ZB_COORD) ||
+           (zclSampleLight_NwkState == DEV_ROUTER))
+        {
+            zAddrType_t tmpAddr;
+
+            tmpAddr.addrMode = Addr16Bit;
+            tmpAddr.addr.shortAddr = NLME_GetShortAddr();
+
+            // toggle permit join
+            gPermitDuration = gPermitDuration ? 0 : 0xff;
+
+            debug_str("Disable or enable joining");
+
+            // Trust Center significance is always true
+            ZDP_MgmtPermitJoinReq(&tmpAddr, gPermitDuration, TRUE, FALSE);
+        }
+    }
+
+    // Shift F5 does a Basic Reset (factory defaults)
+    if(shift && (keys & HAL_KEY_SW_5))
+    {
+        zclSampleLight_BasicResetCB();
+    }
+    else if(keys & HAL_KEY_SW_5)
+    {
+        giLightScreenMode = giLightScreenMode ? LIGHT_MAINMODE : LIGHT_HELPMODE;
+    }
+
+    // update the display, including the light
+    zclSampleLight_LcdDisplayUpdate();
 }
 
 /*********************************************************************
@@ -693,20 +713,20 @@ static void zclSampleLight_HandleKeys( byte shift, byte keys )
  *
  * @return  none
  */
-void zclSampleLight_LcdDisplayUpdate( void )
+void zclSampleLight_LcdDisplayUpdate(void)
 {
 #ifdef LCD_SUPPORTED
-  if ( giLightScreenMode == LIGHT_HELPMODE )
-  {
-    zclSampleLight_LcdDisplayHelpMode();
-  }
-  else
-  {
-    zclSampleLight_LcdDisplayMainMode();
-  }
+    if(giLightScreenMode == LIGHT_HELPMODE)
+    {
+        zclSampleLight_LcdDisplayHelpMode();
+    }
+    else
+    {
+        zclSampleLight_LcdDisplayMainMode();
+    }
 #endif
 
-  zclSampleLight_DisplayLight();
+    zclSampleLight_DisplayLight();
 }
 
 #if (defined HAL_BOARD_ZLIGHT) || (defined HAL_PWM)
@@ -719,15 +739,15 @@ void zclSampleLight_LcdDisplayUpdate( void )
  *
  * @return  none
  */
-void zclSampleLight_UpdateLampLevel( uint8 level )
+void zclSampleLight_UpdateLampLevel(uint8 level)
 
 {
-  uint16 gammaCorrectedLevel;
+    uint16 gammaCorrectedLevel;
 
-  // gamma correct the level
-  gammaCorrectedLevel = (uint16) ( pow( ( (float)level / LEVEL_MAX ), (float)GAMMA_VALUE ) * (float)LEVEL_MAX);
+    // gamma correct the level
+    gammaCorrectedLevel = (uint16)(pow(((float)level / LEVEL_MAX), (float)GAMMA_VALUE) * (float)LEVEL_MAX);
 
-  halTimer1SetChannelDuty(WHITE_LED, (uint16)(((uint32)gammaCorrectedLevel*PWM_FULL_DUTY_CYCLE)/LEVEL_MAX) );
+    halTimer1SetChannelDuty(WHITE_LED, (uint16)(((uint32)gammaCorrectedLevel*PWM_FULL_DUTY_CYCLE)/LEVEL_MAX));
 }
 #endif
 
@@ -740,51 +760,51 @@ void zclSampleLight_UpdateLampLevel( uint8 level )
  *
  * @return  none
  */
-static void zclSampleLight_DisplayLight( void )
+static void zclSampleLight_DisplayLight(void)
 {
-  // set the LED1 based on light (on or off)
-  if ( zclSampleLight_OnOff == LIGHT_ON )
-  {
-    HalLedSet ( HAL_LED_1, HAL_LED_MODE_ON );
-  }
-  else
-  {
-    HalLedSet ( HAL_LED_1, HAL_LED_MODE_OFF );
-  }
-
-#ifdef LCD_SUPPORTED
-  if (giLightScreenMode == LIGHT_MAINMODE)
-  {
-#ifdef ZCL_LEVEL_CTRL
-    // display current light level
-    if ( ( zclSampleLight_LevelCurrentLevel == ATTR_LEVEL_MIN_LEVEL ) &&
-         ( zclSampleLight_OnOff == LIGHT_OFF ) )
+    // set the LED1 based on light (on or off)
+    if(zclSampleLight_OnOff == LIGHT_ON)
     {
-      HalLcdWriteString( (char *)sLightOff, HAL_LCD_LINE_2 );
-    }
-    else if ( ( zclSampleLight_LevelCurrentLevel >= ATTR_LEVEL_MAX_LEVEL ) ||
-              ( zclSampleLight_LevelCurrentLevel == zclSampleLight_LevelOnLevel ) ||
-               ( ( zclSampleLight_LevelOnLevel == ATTR_LEVEL_ON_LEVEL_NO_EFFECT ) &&
-                 ( zclSampleLight_LevelCurrentLevel == zclSampleLight_LevelLastLevel ) ) )
-    {
-      HalLcdWriteString( (char *)sLightOn, HAL_LCD_LINE_2 );
-    }
-    else    // "    LEVEL ###"
-    {
-      zclHA_uint8toa( zclSampleLight_LevelCurrentLevel, &sLightLevel[10] );
-      HalLcdWriteString( (char *)sLightLevel, HAL_LCD_LINE_2 );
-    }
-#else
-    if ( zclSampleLight_OnOff )
-    {
-      HalLcdWriteString( (char *)sLightOn, HAL_LCD_LINE_2 );
+        HalLedSet(HAL_LED_1, HAL_LED_MODE_ON);
     }
     else
     {
-      HalLcdWriteString( (char *)sLightOff, HAL_LCD_LINE_2 );
+        HalLedSet(HAL_LED_1, HAL_LED_MODE_OFF);
     }
+
+#ifdef LCD_SUPPORTED
+    if(giLightScreenMode == LIGHT_MAINMODE)
+    {
+#ifdef ZCL_LEVEL_CTRL
+        // display current light level
+        if((zclSampleLight_LevelCurrentLevel == ATTR_LEVEL_MIN_LEVEL) &&
+           (zclSampleLight_OnOff == LIGHT_OFF))
+        {
+            HalLcdWriteString((char *)sLightOff, HAL_LCD_LINE_2);
+        }
+        else if((zclSampleLight_LevelCurrentLevel >= ATTR_LEVEL_MAX_LEVEL) ||
+                (zclSampleLight_LevelCurrentLevel == zclSampleLight_LevelOnLevel) ||
+                ((zclSampleLight_LevelOnLevel == ATTR_LEVEL_ON_LEVEL_NO_EFFECT) &&
+                 (zclSampleLight_LevelCurrentLevel == zclSampleLight_LevelLastLevel)))
+        {
+            HalLcdWriteString((char *)sLightOn, HAL_LCD_LINE_2);
+        }
+        else    // "    LEVEL ###"
+        {
+            zclHA_uint8toa(zclSampleLight_LevelCurrentLevel, &sLightLevel[10]);
+            HalLcdWriteString((char *)sLightLevel, HAL_LCD_LINE_2);
+        }
+#else
+        if(zclSampleLight_OnOff)
+        {
+            HalLcdWriteString((char *)sLightOn, HAL_LCD_LINE_2);
+        }
+        else
+        {
+            HalLcdWriteString((char *)sLightOff, HAL_LCD_LINE_2);
+        }
 #endif // ZCL_LEVEL_CTRL
-  }
+    }
 #endif // LCD_SUPPORTED
 }
 
@@ -798,32 +818,32 @@ static void zclSampleLight_DisplayLight( void )
  *
  * @return  none
  */
-static void zclSampleLight_LcdDisplayMainMode( void )
+static void zclSampleLight_LcdDisplayMainMode(void)
 {
-  // display line 1 to indicate NWK status
-  if ( zclSampleLight_NwkState == DEV_ZB_COORD )
-  {
-    zclHA_LcdStatusLine1( ZCL_HA_STATUSLINE_ZC );
-  }
-  else if ( zclSampleLight_NwkState == DEV_ROUTER )
-  {
-    zclHA_LcdStatusLine1( ZCL_HA_STATUSLINE_ZR );
-  }
-  else if ( zclSampleLight_NwkState == DEV_END_DEVICE )
-  {
-    zclHA_LcdStatusLine1( ZCL_HA_STATUSLINE_ZED );
-  }
+    // display line 1 to indicate NWK status
+    if(zclSampleLight_NwkState == DEV_ZB_COORD)
+    {
+        zclHA_LcdStatusLine1(ZCL_HA_STATUSLINE_ZC);
+    }
+    else if(zclSampleLight_NwkState == DEV_ROUTER)
+    {
+        zclHA_LcdStatusLine1(ZCL_HA_STATUSLINE_ZR);
+    }
+    else if(zclSampleLight_NwkState == DEV_END_DEVICE)
+    {
+        zclHA_LcdStatusLine1(ZCL_HA_STATUSLINE_ZED);
+    }
 
-  // end of line 3 displays permit join status (*)
-  if ( gPermitDuration )
-  {
-    sSwHelp[15] = '*';
-  }
-  else
-  {
-    sSwHelp[15] = ' ';
-  }
-  HalLcdWriteString( (char *)sSwHelp, HAL_LCD_LINE_3 );
+    // end of line 3 displays permit join status (*)
+    if(gPermitDuration)
+    {
+        sSwHelp[15] = '*';
+    }
+    else
+    {
+        sSwHelp[15] = ' ';
+    }
+    HalLcdWriteString((char *)sSwHelp, HAL_LCD_LINE_3);
 }
 
 /*********************************************************************
@@ -835,11 +855,11 @@ static void zclSampleLight_LcdDisplayMainMode( void )
  *
  * @return  none
  */
-static void zclSampleLight_LcdDisplayHelpMode( void )
+static void zclSampleLight_LcdDisplayHelpMode(void)
 {
-  HalLcdWriteString( (char *)sSwLight, HAL_LCD_LINE_1 );
-  HalLcdWriteString( (char *)sSwEZMode, HAL_LCD_LINE_2 );
-  HalLcdWriteString( (char *)sSwHelp, HAL_LCD_LINE_3 );
+    HalLcdWriteString((char *)sSwLight, HAL_LCD_LINE_1);
+    HalLcdWriteString((char *)sSwEZMode, HAL_LCD_LINE_2);
+    HalLcdWriteString((char *)sSwHelp, HAL_LCD_LINE_3);
 }
 #endif  // LCD_SUPPORTED
 
@@ -852,29 +872,29 @@ static void zclSampleLight_LcdDisplayHelpMode( void )
  *
  * @return  none
  */
-static void zclSampleLight_ProcessIdentifyTimeChange( void )
+static void zclSampleLight_ProcessIdentifyTimeChange(void)
 {
-  if ( zclSampleLight_IdentifyTime > 0 )
-  {
-    debug_str("zclSampleLight_IdentifyTime");
-    osal_start_timerEx( zclSampleLight_TaskID, SAMPLELIGHT_IDENTIFY_TIMEOUT_EVT, 1000 );
-    HalLedBlink ( HAL_LED_4, 0xFF, HAL_LED_DEFAULT_DUTY_CYCLE, HAL_LED_DEFAULT_FLASH_TIME );
-  }
-  else
-  {
-#ifdef ZCL_EZMODE
-    if ( zclSampleLight_IdentifyCommissionState & EZMODE_COMMISSION_OPERATIONAL )
+    if(zclSampleLight_IdentifyTime > 0)
     {
-      HalLedSet ( HAL_LED_4, HAL_LED_MODE_ON );
+        debug_str("zclSampleLight_IdentifyTime");
+        osal_start_timerEx(zclSampleLight_TaskID, SAMPLELIGHT_IDENTIFY_TIMEOUT_EVT, 1000);
+        HalLedBlink(HAL_LED_4, 0xFF, HAL_LED_DEFAULT_DUTY_CYCLE, HAL_LED_DEFAULT_FLASH_TIME);
     }
     else
     {
-      HalLedSet ( HAL_LED_4, HAL_LED_MODE_OFF );
-    }
+#ifdef ZCL_EZMODE
+        if(zclSampleLight_IdentifyCommissionState & EZMODE_COMMISSION_OPERATIONAL)
+        {
+            HalLedSet(HAL_LED_4, HAL_LED_MODE_ON);
+        }
+        else
+        {
+            HalLedSet(HAL_LED_4, HAL_LED_MODE_OFF);
+        }
 #endif
 
-    osal_stop_timerEx( zclSampleLight_TaskID, SAMPLELIGHT_IDENTIFY_TIMEOUT_EVT );
-  }
+        osal_stop_timerEx(zclSampleLight_TaskID, SAMPLELIGHT_IDENTIFY_TIMEOUT_EVT);
+    }
 }
 
 /*********************************************************************
@@ -887,27 +907,27 @@ static void zclSampleLight_ProcessIdentifyTimeChange( void )
  *
  * @return  none
  */
-static void zclSampleLight_BasicResetCB( void )
+static void zclSampleLight_BasicResetCB(void)
 {
-  NLME_LeaveReq_t leaveReq;
+    NLME_LeaveReq_t leaveReq;
 
 
-  debug_str("_basicResetCB");
-  // Set every field to 0
-  osal_memset( &leaveReq, 0, sizeof( NLME_LeaveReq_t ) );
+    debug_str("_basicResetCB");
+    // Set every field to 0
+    osal_memset(&leaveReq, 0, sizeof(NLME_LeaveReq_t));
 
-  // This will enable the device to rejoin the network after reset.
-  leaveReq.rejoin = TRUE;
+    // This will enable the device to rejoin the network after reset.
+    leaveReq.rejoin = TRUE;
 
-  // Set the NV startup option to force a "new" join.
-  zgWriteStartupOptions( ZG_STARTUP_SET, ZCD_STARTOPT_DEFAULT_NETWORK_STATE );
+    // Set the NV startup option to force a "new" join.
+    zgWriteStartupOptions(ZG_STARTUP_SET, ZCD_STARTOPT_DEFAULT_NETWORK_STATE);
 
-  // Leave the network, and reset afterwards
-  if ( NLME_LeaveReq( &leaveReq ) != ZSuccess )
-  {
-    // Couldn't send out leave; prepare to reset anyway
-    ZDApp_LeaveReset( FALSE );
-  }
+    // Leave the network, and reset afterwards
+    if(NLME_LeaveReq(&leaveReq) != ZSuccess)
+    {
+        // Couldn't send out leave; prepare to reset anyway
+        ZDApp_LeaveReset(FALSE);
+    }
 }
 
 /*********************************************************************
@@ -921,12 +941,12 @@ static void zclSampleLight_BasicResetCB( void )
  *
  * @return  none
  */
-static void zclSampleLight_IdentifyCB( zclIdentify_t *pCmd )
+static void zclSampleLight_IdentifyCB(zclIdentify_t *pCmd)
 {
 
-	debug_str("_identifyCB");
-  zclSampleLight_IdentifyTime = pCmd->identifyTime;
-  zclSampleLight_ProcessIdentifyTimeChange();
+    debug_str("_identifyCB");
+    zclSampleLight_IdentifyTime = pCmd->identifyTime;
+    zclSampleLight_ProcessIdentifyTimeChange();
 }
 
 /*********************************************************************
@@ -940,16 +960,16 @@ static void zclSampleLight_IdentifyCB( zclIdentify_t *pCmd )
  *
  * @return  none
  */
-static void zclSampleLight_IdentifyQueryRspCB(  zclIdentifyQueryRsp_t *pRsp )
+static void zclSampleLight_IdentifyQueryRspCB(zclIdentifyQueryRsp_t *pRsp)
 {
-  debug_str("_identifyQueryRspCB");
-  (void)pRsp;
+    debug_str("_identifyQueryRspCB");
+    (void)pRsp;
 #ifdef ZCL_EZMODE
-  {
-    zclEZMode_ActionData_t data;
-    data.pIdentifyQueryRsp = pRsp;
-    zcl_EZModeAction ( EZMODE_ACTION_IDENTIFY_QUERY_RSP, &data );
-  }
+    {
+        zclEZMode_ActionData_t data;
+        data.pIdentifyQueryRsp = pRsp;
+        zcl_EZModeAction(EZMODE_ACTION_IDENTIFY_QUERY_RSP, &data);
+    }
 #endif
 }
 
@@ -963,51 +983,51 @@ static void zclSampleLight_IdentifyQueryRspCB(  zclIdentifyQueryRsp_t *pRsp )
  *
  * @return  none
  */
-static void zclSampleLight_OnOffCB( uint8 cmd )
+static void zclSampleLight_OnOffCB(uint8 cmd)
 {
-  afIncomingMSGPacket_t *pPtr = zcl_getRawAFMsg();
+    afIncomingMSGPacket_t *pPtr = zcl_getRawAFMsg();
 
-  zclSampleLight_DstAddr.addr.shortAddr = pPtr->srcAddr.addr.shortAddr;
+    zclSampleLight_DstAddr.addr.shortAddr = pPtr->srcAddr.addr.shortAddr;
 
-  debug_str("ON_off cmd recvd");
+    debug_str("ON_off cmd recvd");
 
 
-  // Turn on the light
-  if ( cmd == COMMAND_ON )
-  {
-    zclSampleLight_OnOff = LIGHT_ON;
-		debug_str("LIGHT_ON");
-		CUST_LED1_ON();
-  }
-  // Turn off the light
-  else if ( cmd == COMMAND_OFF )
-  {
-    zclSampleLight_OnOff = LIGHT_OFF;
-		debug_str("LIGHT_OFF");
-		CUST_LED1_OFF();
-  }
-  // Toggle the light
-  else if ( cmd == COMMAND_TOGGLE )
-  {
-    debug_str("LIGHT_TOGGLE");
-		CUST_LED1_TOOGLE();
-		
-    if ( zclSampleLight_OnOff == LIGHT_OFF )
+    // Turn on the light
+    if(cmd == COMMAND_ON)
     {
-      zclSampleLight_OnOff = LIGHT_ON;
+        zclSampleLight_OnOff = LIGHT_ON;
+        debug_str("LIGHT_ON");
+        CUST_LED1_ON();
     }
-    else
+    // Turn off the light
+    else if(cmd == COMMAND_OFF)
     {
-      zclSampleLight_OnOff = LIGHT_OFF;
+        zclSampleLight_OnOff = LIGHT_OFF;
+        debug_str("LIGHT_OFF");
+        CUST_LED1_OFF();
     }
-  }
+    // Toggle the light
+    else if(cmd == COMMAND_TOGGLE)
+    {
+        debug_str("LIGHT_TOGGLE");
+        CUST_LED1_TOOGLE();
+
+        if(zclSampleLight_OnOff == LIGHT_OFF)
+        {
+            zclSampleLight_OnOff = LIGHT_ON;
+        }
+        else
+        {
+            zclSampleLight_OnOff = LIGHT_OFF;
+        }
+    }
 
 #if ZCL_LEVEL_CTRL
-  zclSampleLight_DefaultMove( );
+    zclSampleLight_DefaultMove();
 #endif
 
-  // update the display
-  zclSampleLight_LcdDisplayUpdate( );
+    // update the display
+    zclSampleLight_LcdDisplayUpdate();
 }
 
 #ifdef ZCL_LEVEL_CTRL
@@ -1020,29 +1040,29 @@ static void zclSampleLight_OnOffCB( uint8 cmd )
  *
  * @return  diff (directly), zclSampleLight_CurrentLevel32 and zclSampleLight_NewLevel, zclSampleLight_NewLevelUp
  */
-static uint32 zclSampleLight_TimeRateHelper( uint8 newLevel )
+static uint32 zclSampleLight_TimeRateHelper(uint8 newLevel)
 {
-  uint32 diff;
-  uint32 newLevel32;
+    uint32 diff;
+    uint32 newLevel32;
 
-  // remember current and new level
-  zclSampleLight_NewLevel = newLevel;
-  zclSampleLight_CurrentLevel32 = (uint32)1000 * zclSampleLight_LevelCurrentLevel;
+    // remember current and new level
+    zclSampleLight_NewLevel = newLevel;
+    zclSampleLight_CurrentLevel32 = (uint32)1000 * zclSampleLight_LevelCurrentLevel;
 
-  // calculate diff
-  newLevel32 = (uint32)1000 * newLevel;
-  if ( zclSampleLight_LevelCurrentLevel > newLevel )
-  {
-    diff = zclSampleLight_CurrentLevel32 - newLevel32;
-    zclSampleLight_NewLevelUp = FALSE;  // moving down
-  }
-  else
-  {
-    diff = newLevel32 - zclSampleLight_CurrentLevel32;
-    zclSampleLight_NewLevelUp = TRUE;   // moving up
-  }
+    // calculate diff
+    newLevel32 = (uint32)1000 * newLevel;
+    if(zclSampleLight_LevelCurrentLevel > newLevel)
+    {
+        diff = zclSampleLight_CurrentLevel32 - newLevel32;
+        zclSampleLight_NewLevelUp = FALSE;  // moving down
+    }
+    else
+    {
+        diff = newLevel32 - zclSampleLight_CurrentLevel32;
+        zclSampleLight_NewLevelUp = TRUE;   // moving up
+    }
 
-  return ( diff );
+    return (diff);
 }
 
 /*********************************************************************
@@ -1055,20 +1075,20 @@ static uint32 zclSampleLight_TimeRateHelper( uint8 newLevel )
  *
  * @return  none
  */
-static void zclSampleLight_MoveBasedOnRate( uint8 newLevel, uint32 rate )
+static void zclSampleLight_MoveBasedOnRate(uint8 newLevel, uint32 rate)
 {
-  uint32 diff;
+    uint32 diff;
 
-  // determine how much time (in 10ths of seconds) based on the difference and rate
-  zclSampleLight_Rate32 = rate;
-  diff = zclSampleLight_TimeRateHelper( newLevel );
-  zclSampleLight_LevelRemainingTime = diff / rate;
-  if ( !zclSampleLight_LevelRemainingTime )
-  {
-    zclSampleLight_LevelRemainingTime = 1;
-  }
+    // determine how much time (in 10ths of seconds) based on the difference and rate
+    zclSampleLight_Rate32 = rate;
+    diff = zclSampleLight_TimeRateHelper(newLevel);
+    zclSampleLight_LevelRemainingTime = diff / rate;
+    if(!zclSampleLight_LevelRemainingTime)
+    {
+        zclSampleLight_LevelRemainingTime = 1;
+    }
 
-  osal_start_timerEx( zclSampleLight_TaskID, SAMPLELIGHT_LEVEL_CTRL_EVT, 100 );
+    osal_start_timerEx(zclSampleLight_TaskID, SAMPLELIGHT_LEVEL_CTRL_EVT, 100);
 }
 
 /*********************************************************************
@@ -1081,16 +1101,16 @@ static void zclSampleLight_MoveBasedOnRate( uint8 newLevel, uint32 rate )
  *
  * @return  none
  */
-static void zclSampleLight_MoveBasedOnTime( uint8 newLevel, uint16 time )
+static void zclSampleLight_MoveBasedOnTime(uint8 newLevel, uint16 time)
 {
-  uint16 diff;
+    uint16 diff;
 
-  // determine rate (in units) based on difference and time
-  diff = zclSampleLight_TimeRateHelper( newLevel );
-  zclSampleLight_LevelRemainingTime = zclSampleLight_GetTime( newLevel, time );
-  zclSampleLight_Rate32 = diff / time;
+    // determine rate (in units) based on difference and time
+    diff = zclSampleLight_TimeRateHelper(newLevel);
+    zclSampleLight_LevelRemainingTime = zclSampleLight_GetTime(newLevel, time);
+    zclSampleLight_Rate32 = diff / time;
 
-  osal_start_timerEx( zclSampleLight_TaskID, SAMPLELIGHT_LEVEL_CTRL_EVT, 100 );
+    osal_start_timerEx(zclSampleLight_TaskID, SAMPLELIGHT_LEVEL_CTRL_EVT, 100);
 }
 
 /*********************************************************************
@@ -1103,42 +1123,42 @@ static void zclSampleLight_MoveBasedOnTime( uint8 newLevel, uint16 time )
  *
  * @return  none
  */
-static uint16 zclSampleLight_GetTime( uint8 level, uint16 time )
+static uint16 zclSampleLight_GetTime(uint8 level, uint16 time)
 {
-  // there is a hiearchy of the amount of time to use for transistioning
-  // check each one in turn. If none of defaults are set, then use fastest
-  // time possible.
-  if ( time == 0xFFFF )
-  {
-    // use On or Off Transition Time if set (not 0xffff)
-    if ( zclSampleLight_OnOff == LIGHT_ON )
+    // there is a hiearchy of the amount of time to use for transistioning
+    // check each one in turn. If none of defaults are set, then use fastest
+    // time possible.
+    if(time == 0xFFFF)
     {
-      time = zclSampleLight_LevelOffTransitionTime;
-    }
-    else
-    {
-      time = zclSampleLight_LevelOnTransitionTime;
+        // use On or Off Transition Time if set (not 0xffff)
+        if(zclSampleLight_OnOff == LIGHT_ON)
+        {
+            time = zclSampleLight_LevelOffTransitionTime;
+        }
+        else
+        {
+            time = zclSampleLight_LevelOnTransitionTime;
+        }
+
+        // else use OnOffTransitionTime if set (not 0xffff)
+        if(time == 0xFFFF)
+        {
+            time = zclSampleLight_LevelOnOffTransitionTime;
+        }
+
+        // else as fast as possible
+        if(time == 0xFFFF)
+        {
+            time = 1;
+        }
     }
 
-    // else use OnOffTransitionTime if set (not 0xffff)
-    if ( time == 0xFFFF )
+    if(!time)
     {
-      time = zclSampleLight_LevelOnOffTransitionTime;
+        time = 1; // as fast as possible
     }
 
-    // else as fast as possible
-    if ( time == 0xFFFF )
-    {
-      time = 1;
-    }
-  }
-
-  if ( !time )
-  {
-    time = 1; // as fast as possible
-  }
-
-  return ( time );
+    return (time);
 }
 
 /*********************************************************************
@@ -1150,59 +1170,59 @@ static uint16 zclSampleLight_GetTime( uint8 level, uint16 time )
  *
  * @return  none
  */
-static void zclSampleLight_DefaultMove( void )
+static void zclSampleLight_DefaultMove(void)
 {
-  uint8  newLevel;
-  uint32 rate;      // fixed point decimal (3 places, eg. 16.345)
-  uint16 time;
+    uint8  newLevel;
+    uint32 rate;      // fixed point decimal (3 places, eg. 16.345)
+    uint16 time;
 
-  // if moving to on position, move to on level
-  if ( zclSampleLight_OnOff )
-  {
-    if ( zclSampleLight_LevelOnLevel == ATTR_LEVEL_ON_LEVEL_NO_EFFECT )
+    // if moving to on position, move to on level
+    if(zclSampleLight_OnOff)
     {
-      // The last Level (before going OFF) should be used)
-      newLevel = zclSampleLight_LevelLastLevel;
+        if(zclSampleLight_LevelOnLevel == ATTR_LEVEL_ON_LEVEL_NO_EFFECT)
+        {
+            // The last Level (before going OFF) should be used)
+            newLevel = zclSampleLight_LevelLastLevel;
+        }
+        else
+        {
+            newLevel = zclSampleLight_LevelOnLevel;
+        }
+
+        time = zclSampleLight_LevelOnTransitionTime;
     }
     else
     {
-      newLevel = zclSampleLight_LevelOnLevel;
+        newLevel = ATTR_LEVEL_MIN_LEVEL;
+
+        if(zclSampleLight_LevelOnLevel == ATTR_LEVEL_ON_LEVEL_NO_EFFECT)
+        {
+            // Save the current Level before going OFF to use it when the light turns ON
+            // it should be back to this level
+            zclSampleLight_LevelLastLevel = zclSampleLight_LevelCurrentLevel;
+        }
+
+        time = zclSampleLight_LevelOffTransitionTime;
     }
 
-    time = zclSampleLight_LevelOnTransitionTime;
-  }
-  else
-  {
-    newLevel = ATTR_LEVEL_MIN_LEVEL;
-
-    if ( zclSampleLight_LevelOnLevel == ATTR_LEVEL_ON_LEVEL_NO_EFFECT )
+    // else use OnOffTransitionTime if set (not 0xffff)
+    if(time == 0xFFFF)
     {
-      // Save the current Level before going OFF to use it when the light turns ON
-      // it should be back to this level
-      zclSampleLight_LevelLastLevel = zclSampleLight_LevelCurrentLevel;
+        time = zclSampleLight_LevelOnOffTransitionTime;
     }
 
-    time = zclSampleLight_LevelOffTransitionTime;
-  }
+    // else as fast as possible
+    if(time == 0xFFFF)
+    {
+        time = 1;
+    }
 
-  // else use OnOffTransitionTime if set (not 0xffff)
-  if ( time == 0xFFFF )
-  {
-    time = zclSampleLight_LevelOnOffTransitionTime;
-  }
+    // calculate rate based on time (int 10ths) for full transition (1-254)
+    rate = 255000 / time;    // units per tick, fixed point, 3 decimal places (e.g. 8500 = 8.5 units per tick)
 
-  // else as fast as possible
-  if ( time == 0xFFFF )
-  {
-    time = 1;
-  }
-
-  // calculate rate based on time (int 10ths) for full transition (1-254)
-  rate = 255000 / time;    // units per tick, fixed point, 3 decimal places (e.g. 8500 = 8.5 units per tick)
-
-  // start up state machine.
-  zclSampleLight_WithOnOff = TRUE;
-  zclSampleLight_MoveBasedOnRate( newLevel, rate );
+    // start up state machine.
+    zclSampleLight_WithOnOff = TRUE;
+    zclSampleLight_MoveBasedOnRate(newLevel, rate);
 }
 
 /*********************************************************************
@@ -1214,65 +1234,65 @@ static void zclSampleLight_DefaultMove( void )
  *
  * @return  none
  */
-static void zclSampleLight_AdjustLightLevel( void )
+static void zclSampleLight_AdjustLightLevel(void)
 {
-  // one tick (10th of a second) less
-  if ( zclSampleLight_LevelRemainingTime )
-  {
-    --zclSampleLight_LevelRemainingTime;
-  }
-
-  // no time left, done
-  if ( zclSampleLight_LevelRemainingTime == 0)
-  {
-    zclSampleLight_LevelCurrentLevel = zclSampleLight_NewLevel;
-  }
-
-  // still time left, keep increment/decrementing
-  else
-  {
-    if ( zclSampleLight_NewLevelUp )
+    // one tick (10th of a second) less
+    if(zclSampleLight_LevelRemainingTime)
     {
-      zclSampleLight_CurrentLevel32 += zclSampleLight_Rate32;
+        --zclSampleLight_LevelRemainingTime;
     }
+
+    // no time left, done
+    if(zclSampleLight_LevelRemainingTime == 0)
+    {
+        zclSampleLight_LevelCurrentLevel = zclSampleLight_NewLevel;
+    }
+
+    // still time left, keep increment/decrementing
     else
     {
-      zclSampleLight_CurrentLevel32 -= zclSampleLight_Rate32;
+        if(zclSampleLight_NewLevelUp)
+        {
+            zclSampleLight_CurrentLevel32 += zclSampleLight_Rate32;
+        }
+        else
+        {
+            zclSampleLight_CurrentLevel32 -= zclSampleLight_Rate32;
+        }
+        zclSampleLight_LevelCurrentLevel = (uint8)(zclSampleLight_CurrentLevel32 / 1000);
     }
-    zclSampleLight_LevelCurrentLevel = (uint8)( zclSampleLight_CurrentLevel32 / 1000 );
-  }
 
 #if (defined HAL_BOARD_ZLIGHT) || (defined HAL_PWM)
-  zclSampleLight_UpdateLampLevel(zclSampleLight_LevelCurrentLevel);
+    zclSampleLight_UpdateLampLevel(zclSampleLight_LevelCurrentLevel);
 #endif
 
-  // also affect on/off
-  if ( zclSampleLight_WithOnOff )
-  {
-    if ( zclSampleLight_LevelCurrentLevel > ATTR_LEVEL_MIN_LEVEL )
+    // also affect on/off
+    if(zclSampleLight_WithOnOff)
     {
-      zclSampleLight_OnOff = LIGHT_ON;
+        if(zclSampleLight_LevelCurrentLevel > ATTR_LEVEL_MIN_LEVEL)
+        {
+            zclSampleLight_OnOff = LIGHT_ON;
 #if (defined HAL_BOARD_ZLIGHT) || (defined HAL_PWM)
-      ENABLE_LAMP;
+            ENABLE_LAMP;
 #endif
+        }
+        else
+        {
+            zclSampleLight_OnOff = LIGHT_OFF;
+#if (defined HAL_BOARD_ZLIGHT) || (defined HAL_PWM)
+            DISABLE_LAMP;
+#endif
+        }
     }
-    else
+
+    // display light level as we go
+    zclSampleLight_DisplayLight();
+
+    // keep ticking away
+    if(zclSampleLight_LevelRemainingTime)
     {
-      zclSampleLight_OnOff = LIGHT_OFF;
-#if (defined HAL_BOARD_ZLIGHT) || (defined HAL_PWM)
-      DISABLE_LAMP;
-#endif
+        osal_start_timerEx(zclSampleLight_TaskID, SAMPLELIGHT_LEVEL_CTRL_EVT, 100);
     }
-  }
-
-  // display light level as we go
-  zclSampleLight_DisplayLight( );
-
-  // keep ticking away
-  if ( zclSampleLight_LevelRemainingTime )
-  {
-    osal_start_timerEx( zclSampleLight_TaskID, SAMPLELIGHT_LEVEL_CTRL_EVT, 100 );
-  }
 }
 
 /*********************************************************************
@@ -1285,10 +1305,10 @@ static void zclSampleLight_AdjustLightLevel( void )
  *
  * @return  none
  */
-static void zclSampleLight_LevelControlMoveToLevelCB( zclLCMoveToLevel_t *pCmd )
+static void zclSampleLight_LevelControlMoveToLevelCB(zclLCMoveToLevel_t *pCmd)
 {
-  zclSampleLight_WithOnOff = pCmd->withOnOff;
-  zclSampleLight_MoveBasedOnTime( pCmd->level, pCmd->transitionTime );
+    zclSampleLight_WithOnOff = pCmd->withOnOff;
+    zclSampleLight_MoveBasedOnTime(pCmd->level, pCmd->transitionTime);
 }
 
 /*********************************************************************
@@ -1301,26 +1321,26 @@ static void zclSampleLight_LevelControlMoveToLevelCB( zclLCMoveToLevel_t *pCmd )
  *
  * @return  none
  */
-static void zclSampleLight_LevelControlMoveCB( zclLCMove_t *pCmd )
+static void zclSampleLight_LevelControlMoveCB(zclLCMove_t *pCmd)
 {
-  uint8 newLevel;
-  uint32 rate;
+    uint8 newLevel;
+    uint32 rate;
 
-  // convert rate from units per second to units per tick (10ths of seconds)
-  // and move at that right up or down
-  zclSampleLight_WithOnOff = pCmd->withOnOff;
+    // convert rate from units per second to units per tick (10ths of seconds)
+    // and move at that right up or down
+    zclSampleLight_WithOnOff = pCmd->withOnOff;
 
-  if ( pCmd->moveMode == LEVEL_MOVE_UP )
-  {
-    newLevel = ATTR_LEVEL_MAX_LEVEL;  // fully on
-  }
-  else
-  {
-    newLevel = ATTR_LEVEL_MIN_LEVEL; // fully off
-  }
+    if(pCmd->moveMode == LEVEL_MOVE_UP)
+    {
+        newLevel = ATTR_LEVEL_MAX_LEVEL;  // fully on
+    }
+    else
+    {
+        newLevel = ATTR_LEVEL_MIN_LEVEL; // fully off
+    }
 
-  rate = (uint32)100 * pCmd->rate;
-  zclSampleLight_MoveBasedOnRate( newLevel, rate );
+    rate = (uint32)100 * pCmd->rate;
+    zclSampleLight_MoveBasedOnRate(newLevel, rate);
 }
 
 /*********************************************************************
@@ -1333,37 +1353,37 @@ static void zclSampleLight_LevelControlMoveCB( zclLCMove_t *pCmd )
  *
  * @return  none
  */
-static void zclSampleLight_LevelControlStepCB( zclLCStep_t *pCmd )
+static void zclSampleLight_LevelControlStepCB(zclLCStep_t *pCmd)
 {
-  uint8 newLevel;
+    uint8 newLevel;
 
-  // determine new level, but don't exceed boundaries
-  if ( pCmd->stepMode == LEVEL_MOVE_UP )
-  {
-    if ( (uint16)zclSampleLight_LevelCurrentLevel + pCmd->amount > ATTR_LEVEL_MAX_LEVEL )
+    // determine new level, but don't exceed boundaries
+    if(pCmd->stepMode == LEVEL_MOVE_UP)
     {
-      newLevel = ATTR_LEVEL_MAX_LEVEL;
+        if((uint16)zclSampleLight_LevelCurrentLevel + pCmd->amount > ATTR_LEVEL_MAX_LEVEL)
+        {
+            newLevel = ATTR_LEVEL_MAX_LEVEL;
+        }
+        else
+        {
+            newLevel = zclSampleLight_LevelCurrentLevel + pCmd->amount;
+        }
     }
     else
     {
-      newLevel = zclSampleLight_LevelCurrentLevel + pCmd->amount;
+        if(pCmd->amount >= zclSampleLight_LevelCurrentLevel)
+        {
+            newLevel = ATTR_LEVEL_MIN_LEVEL;
+        }
+        else
+        {
+            newLevel = zclSampleLight_LevelCurrentLevel - pCmd->amount;
+        }
     }
-  }
-  else
-  {
-    if ( pCmd->amount >= zclSampleLight_LevelCurrentLevel )
-    {
-      newLevel = ATTR_LEVEL_MIN_LEVEL;
-    }
-    else
-    {
-      newLevel = zclSampleLight_LevelCurrentLevel - pCmd->amount;
-    }
-  }
 
-  // move to the new level
-  zclSampleLight_WithOnOff = pCmd->withOnOff;
-  zclSampleLight_MoveBasedOnTime( newLevel, pCmd->transitionTime );
+    // move to the new level
+    zclSampleLight_WithOnOff = pCmd->withOnOff;
+    zclSampleLight_MoveBasedOnTime(newLevel, pCmd->transitionTime);
 }
 
 /*********************************************************************
@@ -1376,11 +1396,11 @@ static void zclSampleLight_LevelControlStepCB( zclLCStep_t *pCmd )
  *
  * @return  none
  */
-static void zclSampleLight_LevelControlStopCB( void )
+static void zclSampleLight_LevelControlStopCB(void)
 {
-  // stop immediately
-  osal_stop_timerEx( zclSampleLight_TaskID, SAMPLELIGHT_LEVEL_CTRL_EVT );
-  zclSampleLight_LevelRemainingTime = 0;
+    // stop immediately
+    osal_stop_timerEx(zclSampleLight_TaskID, SAMPLELIGHT_LEVEL_CTRL_EVT);
+    zclSampleLight_LevelRemainingTime = 0;
 }
 #endif
 
@@ -1399,68 +1419,73 @@ static void zclSampleLight_LevelControlStopCB( void )
  *
  * @return  none
  */
-static void zclSampleLight_ProcessIncomingMsg( zclIncomingMsg_t *pInMsg )
+static void zclSampleLight_ProcessIncomingMsg(zclIncomingMsg_t *pInMsg)
 {
-  switch ( pInMsg->zclHdr.commandID )
-  {
+    cust_debug_str("ProcessIncomingMsg  %d", pInMsg->zclHdr.commandID);
+    
+    switch(pInMsg->zclHdr.commandID)
+    {
 #ifdef ZCL_READ
-    case ZCL_CMD_READ_RSP:
-      zclSampleLight_ProcessInReadRspCmd( pInMsg );
-      break;
+        case ZCL_CMD_READ_RSP:
+            
+            zclSampleLight_ProcessInReadRspCmd(pInMsg);
+            
+            break;
 #endif
 #ifdef ZCL_WRITE
-    case ZCL_CMD_WRITE_RSP:
-      zclSampleLight_ProcessInWriteRspCmd( pInMsg );
-      break;
+        case ZCL_CMD_WRITE_RSP:
+            zclSampleLight_ProcessInWriteRspCmd(pInMsg);
+            break;
 #endif
 #ifdef ZCL_REPORT
-    // Attribute Reporting implementation should be added here
-    case ZCL_CMD_CONFIG_REPORT:
-      // zclSampleLight_ProcessInConfigReportCmd( pInMsg );
-      break;
+        // Attribute Reporting implementation should be added here
+        case ZCL_CMD_CONFIG_REPORT:
+            // zclSampleLight_ProcessInConfigReportCmd( pInMsg );
+            break;
 
-    case ZCL_CMD_CONFIG_REPORT_RSP:
-      // zclSampleLight_ProcessInConfigReportRspCmd( pInMsg );
-      break;
+        case ZCL_CMD_CONFIG_REPORT_RSP:
+            // zclSampleLight_ProcessInConfigReportRspCmd( pInMsg );
+            break;
 
-    case ZCL_CMD_READ_REPORT_CFG:
-      // zclSampleLight_ProcessInReadReportCfgCmd( pInMsg );
-      break;
+        case ZCL_CMD_READ_REPORT_CFG:
+            // zclSampleLight_ProcessInReadReportCfgCmd( pInMsg );
+            break;
 
-    case ZCL_CMD_READ_REPORT_CFG_RSP:
-      // zclSampleLight_ProcessInReadReportCfgRspCmd( pInMsg );
-      break;
+        case ZCL_CMD_READ_REPORT_CFG_RSP:
+            // zclSampleLight_ProcessInReadReportCfgRspCmd( pInMsg );
+            break;
 
-    case ZCL_CMD_REPORT:
-      // zclSampleLight_ProcessInReportCmd( pInMsg );
-      break;
+        case ZCL_CMD_REPORT:
+            zclSampleLight_ProcessInReportCmd(pInMsg);
+            break;
 #endif
-    case ZCL_CMD_DEFAULT_RSP:
-      zclSampleLight_ProcessInDefaultRspCmd( pInMsg );
-      break;
+        case ZCL_CMD_DEFAULT_RSP:
+            zclSampleLight_ProcessInDefaultRspCmd(pInMsg);
+            break;
 #ifdef ZCL_DISCOVER
-    case ZCL_CMD_DISCOVER_CMDS_RECEIVED_RSP:
-      zclSampleLight_ProcessInDiscCmdsRspCmd( pInMsg );
-      break;
+        case ZCL_CMD_DISCOVER_CMDS_RECEIVED_RSP:
+            zclSampleLight_ProcessInDiscCmdsRspCmd(pInMsg);
+            break;
 
-    case ZCL_CMD_DISCOVER_CMDS_GEN_RSP:
-      zclSampleLight_ProcessInDiscCmdsRspCmd( pInMsg );
-      break;
+        case ZCL_CMD_DISCOVER_CMDS_GEN_RSP:
+            zclSampleLight_ProcessInDiscCmdsRspCmd(pInMsg);
+            break;
 
-    case ZCL_CMD_DISCOVER_ATTRS_RSP:
-      zclSampleLight_ProcessInDiscAttrsRspCmd( pInMsg );
-      break;
+        case ZCL_CMD_DISCOVER_ATTRS_RSP:
+            zclSampleLight_ProcessInDiscAttrsRspCmd(pInMsg);
+            break;
 
-    case ZCL_CMD_DISCOVER_ATTRS_EXT_RSP:
-      zclSampleLight_ProcessInDiscAttrsExtRspCmd( pInMsg );
-      break;
+        case ZCL_CMD_DISCOVER_ATTRS_EXT_RSP:
+            zclSampleLight_ProcessInDiscAttrsExtRspCmd(pInMsg);
+            break;
 #endif
-    default:
-      break;
-  }
+        default:
+            cust_debug_str("default ProcessIncomingMsg  %d", pInMsg->zclHdr.commandID);
+            break;
+    }
 
-  if ( pInMsg->attrCmd )
-    osal_mem_free( pInMsg->attrCmd );
+    if(pInMsg->attrCmd)
+        osal_mem_free(pInMsg->attrCmd);
 }
 
 #ifdef ZCL_READ
@@ -1473,22 +1498,42 @@ static void zclSampleLight_ProcessIncomingMsg( zclIncomingMsg_t *pInMsg )
  *
  * @return  none
  */
-static uint8 zclSampleLight_ProcessInReadRspCmd( zclIncomingMsg_t *pInMsg )
+static uint8 zclSampleLight_ProcessInReadRspCmd(zclIncomingMsg_t *pInMsg)
 {
-  zclReadRspCmd_t *readRspCmd;
-  uint8 i;
-
-  readRspCmd = (zclReadRspCmd_t *)pInMsg->attrCmd;
-  for (i = 0; i < readRspCmd->numAttr; i++)
-  {
-    // Notify the originator of the results of the original read attributes
-    // attempt and, for each successfull request, the value of the requested
-    // attribute
+    zclReadRspCmd_t *readRspCmd;
+    //uint8 i;
+    uint8  onOff;
+    uint8  period;
     
-		
-  }
+    readRspCmd = (zclReadRspCmd_t *)pInMsg->attrCmd;
 
-  return ( TRUE );
+    cust_debug_str("pinmsg clusterid:%d", pInMsg->clusterId);
+
+    //CUST_LED1_TOOGLE();
+
+    switch(pInMsg->clusterId){
+        case ZCL_CLUSTER_ID_GEN_ON_OFF:
+            // get read light status response
+            onOff = *((uint8*)readRspCmd->attrList[0].data);
+            if(onOff == 1){
+                cust_debug_str("Light is on");
+            }
+            else{
+                 cust_debug_str("Light is off");
+            }
+            break;
+        case ZCL_CLUSTER_ID_GEN_BASIC:
+            // get heartbeat period
+            period = *((uint8*)readRspCmd->attrList[0].data);
+
+            cust_debug_str("%d seconds", period);
+            break;
+        default:
+            break;
+    }
+
+
+    return (TRUE);
 }
 #endif // ZCL_READ
 
@@ -1502,19 +1547,19 @@ static uint8 zclSampleLight_ProcessInReadRspCmd( zclIncomingMsg_t *pInMsg )
  *
  * @return  none
  */
-static uint8 zclSampleLight_ProcessInWriteRspCmd( zclIncomingMsg_t *pInMsg )
+static uint8 zclSampleLight_ProcessInWriteRspCmd(zclIncomingMsg_t *pInMsg)
 {
-  zclWriteRspCmd_t *writeRspCmd;
-  uint8 i;
+    zclWriteRspCmd_t *writeRspCmd;
+    uint8 i;
 
-  writeRspCmd = (zclWriteRspCmd_t *)pInMsg->attrCmd;
-  for ( i = 0; i < writeRspCmd->numAttr; i++ )
-  {
-    // Notify the device of the results of the its original write attributes
-    // command.
-  }
+    writeRspCmd = (zclWriteRspCmd_t *)pInMsg->attrCmd;
+    for(i = 0; i < writeRspCmd->numAttr; i++)
+    {
+        // Notify the device of the results of the its original write attributes
+        // command.
+    }
 
-  return ( TRUE );
+    return (TRUE);
 }
 #endif // ZCL_WRITE
 
@@ -1527,14 +1572,14 @@ static uint8 zclSampleLight_ProcessInWriteRspCmd( zclIncomingMsg_t *pInMsg )
  *
  * @return  none
  */
-static uint8 zclSampleLight_ProcessInDefaultRspCmd( zclIncomingMsg_t *pInMsg )
+static uint8 zclSampleLight_ProcessInDefaultRspCmd(zclIncomingMsg_t *pInMsg)
 {
-  // zclDefaultRspCmd_t *defaultRspCmd = (zclDefaultRspCmd_t *)pInMsg->attrCmd;
+    // zclDefaultRspCmd_t *defaultRspCmd = (zclDefaultRspCmd_t *)pInMsg->attrCmd;
 
-  // Device is notified of the Default Response command.
-  (void)pInMsg;
+    // Device is notified of the Default Response command.
+    (void)pInMsg;
 
-  return ( TRUE );
+    return (TRUE);
 }
 
 #ifdef ZCL_DISCOVER
@@ -1547,18 +1592,18 @@ static uint8 zclSampleLight_ProcessInDefaultRspCmd( zclIncomingMsg_t *pInMsg )
  *
  * @return  none
  */
-static uint8 zclSampleLight_ProcessInDiscCmdsRspCmd( zclIncomingMsg_t *pInMsg )
+static uint8 zclSampleLight_ProcessInDiscCmdsRspCmd(zclIncomingMsg_t *pInMsg)
 {
-  zclDiscoverCmdsCmdRsp_t *discoverRspCmd;
-  uint8 i;
+    zclDiscoverCmdsCmdRsp_t *discoverRspCmd;
+    uint8 i;
 
-  discoverRspCmd = (zclDiscoverCmdsCmdRsp_t *)pInMsg->attrCmd;
-  for ( i = 0; i < discoverRspCmd->numCmd; i++ )
-  {
-    // Device is notified of the result of its attribute discovery command.
-  }
+    discoverRspCmd = (zclDiscoverCmdsCmdRsp_t *)pInMsg->attrCmd;
+    for(i = 0; i < discoverRspCmd->numCmd; i++)
+    {
+        // Device is notified of the result of its attribute discovery command.
+    }
 
-  return ( TRUE );
+    return (TRUE);
 }
 
 /*********************************************************************
@@ -1570,18 +1615,18 @@ static uint8 zclSampleLight_ProcessInDiscCmdsRspCmd( zclIncomingMsg_t *pInMsg )
  *
  * @return  none
  */
-static uint8 zclSampleLight_ProcessInDiscAttrsRspCmd( zclIncomingMsg_t *pInMsg )
+static uint8 zclSampleLight_ProcessInDiscAttrsRspCmd(zclIncomingMsg_t *pInMsg)
 {
-  zclDiscoverAttrsRspCmd_t *discoverRspCmd;
-  uint8 i;
+    zclDiscoverAttrsRspCmd_t *discoverRspCmd;
+    uint8 i;
 
-  discoverRspCmd = (zclDiscoverAttrsRspCmd_t *)pInMsg->attrCmd;
-  for ( i = 0; i < discoverRspCmd->numAttr; i++ )
-  {
-    // Device is notified of the result of its attribute discovery command.
-  }
+    discoverRspCmd = (zclDiscoverAttrsRspCmd_t *)pInMsg->attrCmd;
+    for(i = 0; i < discoverRspCmd->numAttr; i++)
+    {
+        // Device is notified of the result of its attribute discovery command.
+    }
 
-  return ( TRUE );
+    return (TRUE);
 }
 
 /*********************************************************************
@@ -1593,18 +1638,18 @@ static uint8 zclSampleLight_ProcessInDiscAttrsRspCmd( zclIncomingMsg_t *pInMsg )
  *
  * @return  none
  */
-static uint8 zclSampleLight_ProcessInDiscAttrsExtRspCmd( zclIncomingMsg_t *pInMsg )
+static uint8 zclSampleLight_ProcessInDiscAttrsExtRspCmd(zclIncomingMsg_t *pInMsg)
 {
-  zclDiscoverAttrsExtRsp_t *discoverRspCmd;
-  uint8 i;
+    zclDiscoverAttrsExtRsp_t *discoverRspCmd;
+    uint8 i;
 
-  discoverRspCmd = (zclDiscoverAttrsExtRsp_t *)pInMsg->attrCmd;
-  for ( i = 0; i < discoverRspCmd->numAttr; i++ )
-  {
-    // Device is notified of the result of its attribute discovery command.
-  }
+    discoverRspCmd = (zclDiscoverAttrsExtRsp_t *)pInMsg->attrCmd;
+    for(i = 0; i < discoverRspCmd->numAttr; i++)
+    {
+        // Device is notified of the result of its attribute discovery command.
+    }
 
-  return ( TRUE );
+    return (TRUE);
 }
 #endif // ZCL_DISCOVER
 
@@ -1618,21 +1663,21 @@ static uint8 zclSampleLight_ProcessInDiscAttrsExtRspCmd( zclIncomingMsg_t *pInMs
  *
  * @return  status
  */
-static void zclSampleLight_ProcessZDOMsgs( zdoIncomingMsg_t *pMsg )
+static void zclSampleLight_ProcessZDOMsgs(zdoIncomingMsg_t *pMsg)
 {
-  zclEZMode_ActionData_t data;
-  ZDO_MatchDescRsp_t *pMatchDescRsp;
+    zclEZMode_ActionData_t data;
+    ZDO_MatchDescRsp_t *pMatchDescRsp;
 
-  debug_str("cb zclSampleLight_ProcessZDOMsgs");
+    debug_str("cb zclSampleLight_ProcessZDOMsgs");
 
-  // Let EZ-Mode know of the Simple Descriptor Response
-  if ( pMsg->clusterID == Match_Desc_rsp )
-  {
-    pMatchDescRsp = ZDO_ParseEPListRsp( pMsg );
-    data.pMatchDescRsp = pMatchDescRsp;
-    zcl_EZModeAction( EZMODE_ACTION_MATCH_DESC_RSP, &data );
-    osal_mem_free( pMatchDescRsp );
-  }
+    // Let EZ-Mode know of the Simple Descriptor Response
+    if(pMsg->clusterID == Match_Desc_rsp)
+    {
+        pMatchDescRsp = ZDO_ParseEPListRsp(pMsg);
+        data.pMatchDescRsp = pMatchDescRsp;
+        zcl_EZModeAction(EZMODE_ACTION_MATCH_DESC_RSP, &data);
+        osal_mem_free(pMatchDescRsp);
+    }
 }
 
 /*********************************************************************
@@ -1645,120 +1690,128 @@ static void zclSampleLight_ProcessZDOMsgs( zdoIncomingMsg_t *pMsg )
  *
  * @return  none
  */
-static void zclSampleLight_EZModeCB( zlcEZMode_State_t state, zclEZMode_CBData_t *pData )
+static void zclSampleLight_EZModeCB(zlcEZMode_State_t state, zclEZMode_CBData_t *pData)
 {
 #ifdef LCD_SUPPORTED
-  char *pStr;
-  uint8 err;
+    char *pStr;
+    uint8 err;
 #endif
 
-  debug_str("zclSampleLight_EZModeCB");
+    debug_str("zclSampleLight_EZModeCB");
 
-  // time to go into identify mode
-  if ( state == EZMODE_STATE_IDENTIFYING )
-  {
+    // time to go into identify mode
+    if(state == EZMODE_STATE_IDENTIFYING)
+    {
 #ifdef LCD_SUPPORTED
-    HalLcdWriteString( "EZMode", HAL_LCD_LINE_2 );
+        HalLcdWriteString("EZMode", HAL_LCD_LINE_2);
 #endif
 
-    debug_str("EZMODE_STATE_IDENTIFYING");
-    zclSampleLight_IdentifyTime = ( EZMODE_TIME / 1000 );  // convert to seconds
-    zclSampleLight_ProcessIdentifyTimeChange();
-  }
+        debug_str("EZMODE_STATE_IDENTIFYING");
+        zclSampleLight_IdentifyTime = (EZMODE_TIME / 1000);    // convert to seconds
+        zclSampleLight_ProcessIdentifyTimeChange();
+    }
 
-  // autoclosing, show what happened (success, cancelled, etc...)
-  if( state == EZMODE_STATE_AUTOCLOSE )
-  {
+    // autoclosing, show what happened (success, cancelled, etc...)
+    if(state == EZMODE_STATE_AUTOCLOSE)
+    {
 #ifdef LCD_SUPPORTED
-    pStr = NULL;
-    err = pData->sAutoClose.err;
-    if ( err == EZMODE_ERR_SUCCESS )
-    {
-      pStr = "EZMode: Success";
-    }
-    else if ( err == EZMODE_ERR_NOMATCH )
-    {
-      pStr = "EZMode: NoMatch"; // not a match made in heaven
-    }
-    if ( pStr )
-    {
-      if ( giLightScreenMode == LIGHT_MAINMODE )
-      {
-        HalLcdWriteString ( pStr, HAL_LCD_LINE_2 );
-      }
-    }
+        pStr = NULL;
+        err = pData->sAutoClose.err;
+        if(err == EZMODE_ERR_SUCCESS)
+        {
+            pStr = "EZMode: Success";
+        }
+        else if(err == EZMODE_ERR_NOMATCH)
+        {
+            pStr = "EZMode: NoMatch"; // not a match made in heaven
+        }
+        if(pStr)
+        {
+            if(giLightScreenMode == LIGHT_MAINMODE)
+            {
+                HalLcdWriteString(pStr, HAL_LCD_LINE_2);
+            }
+        }
 #endif
-    err = pData->sAutoClose.err;
-    if ( err == EZMODE_ERR_SUCCESS )
-    {
-       debug_str("EZMode: Success");
+        err = pData->sAutoClose.err;
+        if(err == EZMODE_ERR_SUCCESS)
+        {
+            debug_str("EZMode: Success");
+        }
+        else if(err == EZMODE_ERR_NOMATCH)
+        {
+            debug_str("EZMode: NoMatch");
+        }
+        debug_str("EZMODE_STATE_AUTOCLOSE");
     }
-    else if ( err == EZMODE_ERR_NOMATCH )
-    {
-      debug_str("EZMode: NoMatch");
-    }
-    debug_str("EZMODE_STATE_AUTOCLOSE");
-  }
 
-  // finished, either show DstAddr/EP, or nothing (depending on success or not)
-  if( state == EZMODE_STATE_FINISH )
-  {
-    // turn off identify mode
-    zclSampleLight_IdentifyTime = 0;
-    zclSampleLight_ProcessIdentifyTimeChange();
+    // finished, either show DstAddr/EP, or nothing (depending on success or not)
+    if(state == EZMODE_STATE_FINISH)
+    {
+        // turn off identify mode
+        zclSampleLight_IdentifyTime = 0;
+        zclSampleLight_ProcessIdentifyTimeChange();
 
 #ifdef LCD_SUPPORTED
-    // if successful, inform user which nwkaddr/ep we bound to
-    pStr = NULL;
-    err = pData->sFinish.err;
-    if( err == EZMODE_ERR_SUCCESS )
-    {
-      // already stated on autoclose
-    }
-    else if ( err == EZMODE_ERR_CANCELLED )
-    {
-      pStr = "EZMode: Cancel";
-    }
-    else if ( err == EZMODE_ERR_BAD_PARAMETER )
-    {
-      pStr = "EZMode: BadParm";
-    }
-    else if ( err == EZMODE_ERR_TIMEDOUT )
-    {
-      pStr = "EZMode: TimeOut";
-    }
-    if ( pStr )
-    {
-      if ( giLightScreenMode == LIGHT_MAINMODE )
-      {
-        HalLcdWriteString ( pStr, HAL_LCD_LINE_2 );
-      }
-    }
+        // if successful, inform user which nwkaddr/ep we bound to
+        pStr = NULL;
+        err = pData->sFinish.err;
+        if(err == EZMODE_ERR_SUCCESS)
+        {
+            // already stated on autoclose
+        }
+        else if(err == EZMODE_ERR_CANCELLED)
+        {
+            pStr = "EZMode: Cancel";
+        }
+        else if(err == EZMODE_ERR_BAD_PARAMETER)
+        {
+            pStr = "EZMode: BadParm";
+        }
+        else if(err == EZMODE_ERR_TIMEDOUT)
+        {
+            pStr = "EZMode: TimeOut";
+        }
+        if(pStr)
+        {
+            if(giLightScreenMode == LIGHT_MAINMODE)
+            {
+                HalLcdWriteString(pStr, HAL_LCD_LINE_2);
+            }
+        }
 #endif
 
-    err = pData->sFinish.err;
-    if( err == EZMODE_ERR_SUCCESS )
-    {
-      // already stated on autoclose
-      debug_str("EZMODE_STATE_FINISH EZMode: Success");
+        err = pData->sFinish.err;
+        if(err == EZMODE_ERR_SUCCESS)
+        {
+            // already stated on autoclose
+            debug_str("EZMODE_STATE_FINISH EZMode: Success");
+        }
+        else if(err == EZMODE_ERR_CANCELLED)
+        {
+            debug_str("EZMode: Cancel");
+        }
+        else if(err == EZMODE_ERR_BAD_PARAMETER)
+        {
+            debug_str("EZMode: BadParm");
+        }
+        else if(err == EZMODE_ERR_TIMEDOUT)
+        {
+            debug_str("EZMode: TimeOut");
+        }
+        // show main UI screen 3 seconds after binding
+        osal_start_timerEx(zclSampleLight_TaskID, SAMPLELIGHT_MAIN_SCREEN_EVT, 3000);
     }
-    else if ( err == EZMODE_ERR_CANCELLED )
-    {
-      debug_str("EZMode: Cancel");
-    }
-    else if ( err == EZMODE_ERR_BAD_PARAMETER )
-    {
-      debug_str("EZMode: BadParm");
-    }
-    else if ( err == EZMODE_ERR_TIMEDOUT )
-    {
-      debug_str("EZMode: TimeOut");
-    }
-    // show main UI screen 3 seconds after binding
-    osal_start_timerEx( zclSampleLight_TaskID, SAMPLELIGHT_MAIN_SCREEN_EVT, 3000 );
-  }
 }
 #endif // ZCL_EZMODE
+
+#ifdef ZCL_REPORT
+static void zclSampleLight_ProcessInReportCmd(zclIncomingMsg_t *pInMsg)
+{
+    cust_debug_str("Report");
+
+}
+#endif // ZCL_REPORT
 
 /****************************************************************************
 ****************************************************************************/

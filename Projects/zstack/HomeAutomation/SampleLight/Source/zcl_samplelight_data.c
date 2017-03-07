@@ -122,74 +122,86 @@ uint16 zclSampleLight_LevelOffTransitionTime = 20;
 uint8  zclSampleLight_LevelDefaultMoveRate = 0;   // as fast as possible
 #endif
 
+// Custom Attribute
+uint8    zclSmartGarden_HeartbeatPeriod = 15; // in seconds
+uint16  zclSmartGarden_AlarmStatus = 0;
+uint16  zclSmartGarden_PHValue = 0;
+uint16 zclSmartGarden_Temp = 0;
+uint16 zclSmartGarden_Humidity = 0;
+uint16  zclSmartGarden_LightIntensity = 0;
+uint8   zclSmartGarden_IrrigateOnOff = 0;
+uint8   zclSmartGarden_State = 0;
+uint64  zclSmartGarden_ChipId = 0;
+
+
 #if ZCL_DISCOVER
 CONST zclCommandRec_t zclSampleLight_Cmds[] =
 {
-  {
-    ZCL_CLUSTER_ID_GEN_BASIC,
-    COMMAND_BASIC_RESET_FACT_DEFAULT,
-    CMD_DIR_SERVER_RECEIVED
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_ON_OFF,
-    COMMAND_OFF,
-    CMD_DIR_SERVER_RECEIVED
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_ON_OFF,
-    COMMAND_ON,
-    CMD_DIR_SERVER_RECEIVED
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_ON_OFF,
-    COMMAND_TOGGLE,
-    CMD_DIR_SERVER_RECEIVED
-  },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,
+        COMMAND_BASIC_RESET_FACT_DEFAULT,
+        CMD_DIR_SERVER_RECEIVED
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_ON_OFF,
+        COMMAND_OFF,
+        CMD_DIR_SERVER_RECEIVED
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_ON_OFF,
+        COMMAND_ON,
+        CMD_DIR_SERVER_RECEIVED
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_ON_OFF,
+        COMMAND_TOGGLE,
+        CMD_DIR_SERVER_RECEIVED
+    },
 #ifdef ZCL_LEVEL_CONTROL
-  ,{
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    COMMAND_LEVEL_MOVE_TO_LEVEL,
-    CMD_DIR_SERVER_RECEIVED
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    COMMAND_LEVEL_MOVE,
-    CMD_DIR_SERVER_RECEIVED
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    COMMAND_LEVEL_STEP,
-    CMD_DIR_SERVER_RECEIVED
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    COMMAND_LEVEL_STOP,
-    CMD_DIR_SERVER_RECEIVED
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    COMMAND_LEVEL_MOVE_TO_LEVEL_WITH_ON_OFF,
-    CMD_DIR_SERVER_RECEIVED
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    COMMAND_LEVEL_MOVE_WITH_ON_OFF,
-    CMD_DIR_SERVER_RECEIVED
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    COMMAND_LEVEL_STEP_WITH_ON_OFF,
-    CMD_DIR_SERVER_RECEIVED
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    COMMAND_LEVEL_STOP_WITH_ON_OFF,
-    CMD_DIR_SERVER_RECEIVED
-  }
+    ,{
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        COMMAND_LEVEL_MOVE_TO_LEVEL,
+        CMD_DIR_SERVER_RECEIVED
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        COMMAND_LEVEL_MOVE,
+        CMD_DIR_SERVER_RECEIVED
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        COMMAND_LEVEL_STEP,
+        CMD_DIR_SERVER_RECEIVED
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        COMMAND_LEVEL_STOP,
+        CMD_DIR_SERVER_RECEIVED
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        COMMAND_LEVEL_MOVE_TO_LEVEL_WITH_ON_OFF,
+        CMD_DIR_SERVER_RECEIVED
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        COMMAND_LEVEL_MOVE_WITH_ON_OFF,
+        CMD_DIR_SERVER_RECEIVED
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        COMMAND_LEVEL_STEP_WITH_ON_OFF,
+        CMD_DIR_SERVER_RECEIVED
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        COMMAND_LEVEL_STOP_WITH_ON_OFF,
+        CMD_DIR_SERVER_RECEIVED
+    }
 #endif // ZCL_LEVEL_CONTROL
 };
 
-CONST uint8 zclCmdsArraySize = ( sizeof(zclSampleLight_Cmds) / sizeof(zclSampleLight_Cmds[0]) );
+CONST uint8 zclCmdsArraySize = (sizeof(zclSampleLight_Cmds) / sizeof(zclSampleLight_Cmds[0]));
 #endif // ZCL_DISCOVER
 
 /*********************************************************************
@@ -197,483 +209,631 @@ CONST uint8 zclCmdsArraySize = ( sizeof(zclSampleLight_Cmds) / sizeof(zclSampleL
  */
 CONST zclAttrRec_t zclSampleLight_Attrs[] =
 {
-  // *** General Basic Cluster Attributes ***
-  {
-    ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
-    {  // Attribute record
-      ATTRID_BASIC_HW_VERSION,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
-      ZCL_DATATYPE_UINT8,                 // Data Type - found in zcl.h
-      ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
-      (void *)&zclSampleLight_HWRevision  // Pointer to attribute variable
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_BASIC,
-    { // Attribute record
-      ATTRID_BASIC_ZCL_VERSION,
-      ZCL_DATATYPE_UINT8,
-      ACCESS_CONTROL_READ,
-      (void *)&zclSampleLight_ZCLVersion
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_BASIC,
-    { // Attribute record
-      ATTRID_BASIC_MANUFACTURER_NAME,
-      ZCL_DATATYPE_CHAR_STR,
-      ACCESS_CONTROL_READ,
-      (void *)zclSampleLight_ManufacturerName
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_BASIC,
-    { // Attribute record
-      ATTRID_BASIC_MODEL_ID,
-      ZCL_DATATYPE_CHAR_STR,
-      ACCESS_CONTROL_READ,
-      (void *)zclSampleLight_ModelId
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_BASIC,
-    { // Attribute record
-      ATTRID_BASIC_DATE_CODE,
-      ZCL_DATATYPE_CHAR_STR,
-      ACCESS_CONTROL_READ,
-      (void *)zclSampleLight_DateCode
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_BASIC,
-    { // Attribute record
-      ATTRID_BASIC_POWER_SOURCE,
-      ZCL_DATATYPE_UINT8,
-      ACCESS_CONTROL_READ,
-      (void *)&zclSampleLight_PowerSource
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_BASIC,
-    { // Attribute record
-      ATTRID_BASIC_LOCATION_DESC,
-      ZCL_DATATYPE_CHAR_STR,
-      (ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE),
-      (void *)zclSampleLight_LocationDescription
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_BASIC,
-    { // Attribute record
-      ATTRID_BASIC_PHYSICAL_ENV,
-      ZCL_DATATYPE_UINT8,
-      (ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE),
-      (void *)&zclSampleLight_PhysicalEnvironment
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_BASIC,
-    { // Attribute record
-      ATTRID_BASIC_DEVICE_ENABLED,
-      ZCL_DATATYPE_BOOLEAN,
-      (ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE),
-      (void *)&zclSampleLight_DeviceEnable
-    }
-  },
+    // *** General Basic Cluster Attributes ***
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
+        {
+            // Attribute record
+            ATTRID_BASIC_HW_VERSION,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
+            ZCL_DATATYPE_UINT8,                 // Data Type - found in zcl.h
+            ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
+            (void *)&zclSampleLight_HWRevision  // Pointer to attribute variable
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,
+        {
+            // Attribute record
+            ATTRID_BASIC_ZCL_VERSION,
+            ZCL_DATATYPE_UINT8,
+            ACCESS_CONTROL_READ,
+            (void *)&zclSampleLight_ZCLVersion
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,
+        {
+            // Attribute record
+            ATTRID_BASIC_MANUFACTURER_NAME,
+            ZCL_DATATYPE_CHAR_STR,
+            ACCESS_CONTROL_READ,
+            (void *)zclSampleLight_ManufacturerName
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,
+        {
+            // Attribute record
+            ATTRID_BASIC_MODEL_ID,
+            ZCL_DATATYPE_CHAR_STR,
+            ACCESS_CONTROL_READ,
+            (void *)zclSampleLight_ModelId
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,
+        {
+            // Attribute record
+            ATTRID_BASIC_DATE_CODE,
+            ZCL_DATATYPE_CHAR_STR,
+            ACCESS_CONTROL_READ,
+            (void *)zclSampleLight_DateCode
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,
+        {
+            // Attribute record
+            ATTRID_BASIC_POWER_SOURCE,
+            ZCL_DATATYPE_UINT8,
+            ACCESS_CONTROL_READ,
+            (void *)&zclSampleLight_PowerSource
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,
+        {
+            // Attribute record
+            ATTRID_BASIC_LOCATION_DESC,
+            ZCL_DATATYPE_CHAR_STR,
+            (ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE),
+            (void *)zclSampleLight_LocationDescription
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,
+        {
+            // Attribute record
+            ATTRID_BASIC_PHYSICAL_ENV,
+            ZCL_DATATYPE_UINT8,
+            (ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE),
+            (void *)&zclSampleLight_PhysicalEnvironment
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,
+        {
+            // Attribute record
+            ATTRID_BASIC_DEVICE_ENABLED,
+            ZCL_DATATYPE_BOOLEAN,
+            (ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE),
+            (void *)&zclSampleLight_DeviceEnable
+        }
+    },
 
 #ifdef ZCL_IDENTIFY
-  // *** Identify Cluster Attribute ***
-  {
-    ZCL_CLUSTER_ID_GEN_IDENTIFY,
-    { // Attribute record
-      ATTRID_IDENTIFY_TIME,
-      ZCL_DATATYPE_UINT16,
-      (ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE),
-      (void *)&zclSampleLight_IdentifyTime
-    }
-  },
- #ifdef ZCL_EZMODE
-  // *** Identify Cluster Attribute ***
-  {
-    ZCL_CLUSTER_ID_GEN_IDENTIFY,
-    { // Attribute record
-      ATTRID_IDENTIFY_COMMISSION_STATE,
-      ZCL_DATATYPE_UINT8,
-      (ACCESS_CONTROL_READ),
-      (void *)&zclSampleLight_IdentifyCommissionState
-    }
-  },
- #endif // ZCL_EZMODE
+    // *** Identify Cluster Attribute ***
+    {
+        ZCL_CLUSTER_ID_GEN_IDENTIFY,
+        {
+            // Attribute record
+            ATTRID_IDENTIFY_TIME,
+            ZCL_DATATYPE_UINT16,
+            (ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE),
+            (void *)&zclSampleLight_IdentifyTime
+        }
+    },
+#ifdef ZCL_EZMODE
+    // *** Identify Cluster Attribute ***
+    {
+        ZCL_CLUSTER_ID_GEN_IDENTIFY,
+        {
+            // Attribute record
+            ATTRID_IDENTIFY_COMMISSION_STATE,
+            ZCL_DATATYPE_UINT8,
+            (ACCESS_CONTROL_READ),
+            (void *)&zclSampleLight_IdentifyCommissionState
+        }
+    },
+#endif // ZCL_EZMODE
 #endif
 
-  // *** On/Off Cluster Attributes ***
-  {
-    ZCL_CLUSTER_ID_GEN_ON_OFF,
-    { // Attribute record
-      ATTRID_ON_OFF,
-      ZCL_DATATYPE_BOOLEAN,
-      ACCESS_CONTROL_READ,
-      (void *)&zclSampleLight_OnOff
+    // *** On/Off Cluster Attributes ***
+    {
+        ZCL_CLUSTER_ID_GEN_ON_OFF,
+        {
+            // Attribute record
+            ATTRID_ON_OFF,
+            ZCL_DATATYPE_BOOLEAN,
+            ACCESS_CONTROL_READ,
+            (void *)&zclSampleLight_OnOff
+        }
     }
-  }
 
 #ifdef ZCL_LEVEL_CTRL
-  , {
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    { // Attribute record
-      ATTRID_LEVEL_CURRENT_LEVEL,
-      ZCL_DATATYPE_UINT8,
-      ACCESS_CONTROL_READ,
-      (void *)&zclSampleLight_LevelCurrentLevel
+    , {
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        {
+            // Attribute record
+            ATTRID_LEVEL_CURRENT_LEVEL,
+            ZCL_DATATYPE_UINT8,
+            ACCESS_CONTROL_READ,
+            (void *)&zclSampleLight_LevelCurrentLevel
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        {
+            // Attribute record
+            ATTRID_LEVEL_REMAINING_TIME,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            (void *)&zclSampleLight_LevelRemainingTime
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        {
+            // Attribute record
+            ATTRID_LEVEL_ON_OFF_TRANSITION_TIME,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE,
+            (void *)&zclSampleLight_LevelOnOffTransitionTime
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        {
+            // Attribute record
+            ATTRID_LEVEL_ON_LEVEL,
+            ZCL_DATATYPE_UINT8,
+            ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE,
+            (void *)&zclSampleLight_LevelOnLevel
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        {
+            // Attribute record
+            ATTRID_LEVEL_ON_TRANSITION_TIME,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE,
+            (void *)&zclSampleLight_LevelOnTransitionTime
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        {
+            // Attribute record
+            ATTRID_LEVEL_OFF_TRANSITION_TIME,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE,
+            (void *)&zclSampleLight_LevelOffTransitionTime
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
+        {
+            // Attribute record
+            ATTRID_LEVEL_DEFAULT_MOVE_RATE,
+            ZCL_DATATYPE_UINT8,
+            ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE,
+            (void *)&zclSampleLight_LevelDefaultMoveRate
+        }
     }
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    { // Attribute record
-      ATTRID_LEVEL_REMAINING_TIME,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      (void *)&zclSampleLight_LevelRemainingTime
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    { // Attribute record
-      ATTRID_LEVEL_ON_OFF_TRANSITION_TIME,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE,
-      (void *)&zclSampleLight_LevelOnOffTransitionTime
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    { // Attribute record
-      ATTRID_LEVEL_ON_LEVEL,
-      ZCL_DATATYPE_UINT8,
-      ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE,
-      (void *)&zclSampleLight_LevelOnLevel
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    { // Attribute record
-      ATTRID_LEVEL_ON_TRANSITION_TIME,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE,
-      (void *)&zclSampleLight_LevelOnTransitionTime
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    { // Attribute record
-      ATTRID_LEVEL_OFF_TRANSITION_TIME,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE,
-      (void *)&zclSampleLight_LevelOffTransitionTime
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL,
-    { // Attribute record
-      ATTRID_LEVEL_DEFAULT_MOVE_RATE,
-      ZCL_DATATYPE_UINT8,
-      ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE,
-      (void *)&zclSampleLight_LevelDefaultMoveRate
-    }
-  }
 #endif
- #ifdef ZCL_DIAGNOSTIC
-  , {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_NUMBER_OF_RESETS,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
+#ifdef ZCL_DIAGNOSTIC
+    , {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_NUMBER_OF_RESETS,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_PERSISTENT_MEMORY_WRITES,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_MAC_RX_BCAST,
+            ZCL_DATATYPE_UINT32,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_MAC_TX_BCAST,
+            ZCL_DATATYPE_UINT32,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_MAC_RX_UCAST,
+            ZCL_DATATYPE_UINT32,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_MAC_TX_UCAST,
+            ZCL_DATATYPE_UINT32,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_MAC_TX_UCAST_RETRY,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_MAC_TX_UCAST_FAIL,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_APS_RX_BCAST,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_APS_TX_BCAST,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_APS_RX_UCAST,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_APS_TX_UCAST_SUCCESS,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_APS_TX_UCAST_RETRY,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_APS_TX_UCAST_FAIL,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_ROUTE_DISC_INITIATED,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_NEIGHBOR_ADDED,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_NEIGHBOR_REMOVED,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_NEIGHBOR_STALE,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_JOIN_INDICATION,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_CHILD_MOVED,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_NWK_FC_FAILURE,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_APS_FC_FAILURE,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_APS_UNAUTHORIZED_KEY,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_NWK_DECRYPT_FAILURES,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_APS_DECRYPT_FAILURES,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_PACKET_BUFFER_ALLOCATE_FAILURES,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_RELAYED_UCAST,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_PHY_TO_MAC_QUEUE_LIMIT_REACHED,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_PACKET_VALIDATE_DROP_COUNT,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_AVERAGE_MAC_RETRY_PER_APS_MESSAGE_SENT,
+            ZCL_DATATYPE_UINT16,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_LAST_MESSAGE_LQI,
+            ZCL_DATATYPE_UINT8,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
+        {
+            // Attribute record
+            ATTRID_DIAGNOSTIC_LAST_MESSAGE_RSSI,
+            ZCL_DATATYPE_INT8,
+            ACCESS_CONTROL_READ,
+            NULL // Use application's callback to Read this attribute
+        }
+    },
+#endif
+    // ZCL_DIAGNOSTIC
+    //Added by Yang
+    //Custom attributes
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
+        {
+            // Attribute record
+            ATTRID_BASIC_SMARTGARDEN_HEARTBEAT_PERIOD,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
+            ZCL_DATATYPE_UINT8,                 // Data Type - found in zcl.h
+            ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE,         // Variable access control - found in zcl.h
+            (void *)&zclSmartGarden_HeartbeatPeriod  // Pointer to attribute variable
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
+        {
+            // Attribute record
+            ATTRID_BASIC_SMARTGARDEN_ALARM_STATUS,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
+            ZCL_DATATYPE_UINT16,                 // Data Type - found in zcl.h
+            ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
+            (void *)&zclSmartGarden_AlarmStatus  // Pointer to attribute variable
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
+        {
+            // Attribute record
+            ATTRID_BASIC_SMARTGARDEN_PH_VALUE,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
+            ZCL_DATATYPE_UINT16,                 // Data Type - found in zcl.h
+            ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
+            (void *)&zclSmartGarden_PHValue  // Pointer to attribute variable
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
+        {
+            // Attribute record
+            ATTRID_BASIC_SMARTGARDEN_TEMP,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
+            ZCL_DATATYPE_UINT16,                 // Data Type - found in zcl.h
+            ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
+            (void *)&zclSmartGarden_Temp  // Pointer to attribute variable
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
+        {
+            // Attribute record
+            ATTRID_BASIC_SMARTGARDEN_HUMIDITY,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
+            ZCL_DATATYPE_UINT16,                 // Data Type - found in zcl.h
+            ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
+            (void *)&zclSmartGarden_Humidity  // Pointer to attribute variable
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
+        {
+            // Attribute record
+            ATTRID_BASIC_SMARTGARDEN_LIGHT_INTENSITY,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
+            ZCL_DATATYPE_UINT16,                 // Data Type - found in zcl.h
+            ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
+            (void *)&zclSmartGarden_LightIntensity // Pointer to attribute variable
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
+        {
+            // Attribute record
+            ATTRID_BASIC_SMARTGARDEN_IRRIGATE_ONOFF,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
+            ZCL_DATATYPE_UINT8,                 // Data Type - found in zcl.h
+            ACCESS_CONTROL_READ | ACCESS_CONTROL_WRITE,                // Variable access control - found in zcl.h
+            (void *)&zclSmartGarden_IrrigateOnOff  // Pointer to attribute variable
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
+        {
+            // Attribute record
+            ATTRID_BASIC_SMARTGARDEN_STATE,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
+            ZCL_DATATYPE_UINT8,                 // Data Type - found in zcl.h
+            ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
+            (void *)&zclSmartGarden_State  // Pointer to attribute variable
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
+        {
+            // Attribute record
+            ATTRID_BASIC_SMARTGARDEN_CHIPID,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
+            ZCL_DATATYPE_UINT64,                 // Data Type - found in zcl.h
+            ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
+            (void *)&zclSmartGarden_ChipId  // Pointer to attribute variable
+        }
     }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_PERSISTENT_MEMORY_WRITES,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_MAC_RX_BCAST,
-      ZCL_DATATYPE_UINT32,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_MAC_TX_BCAST,
-      ZCL_DATATYPE_UINT32,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_MAC_RX_UCAST,
-      ZCL_DATATYPE_UINT32,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_MAC_TX_UCAST,
-      ZCL_DATATYPE_UINT32,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_MAC_TX_UCAST_RETRY,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_MAC_TX_UCAST_FAIL,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_APS_RX_BCAST,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_APS_TX_BCAST,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_APS_RX_UCAST,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_APS_TX_UCAST_SUCCESS,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_APS_TX_UCAST_RETRY,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_APS_TX_UCAST_FAIL,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_ROUTE_DISC_INITIATED,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_NEIGHBOR_ADDED,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_NEIGHBOR_REMOVED,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_NEIGHBOR_STALE,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_JOIN_INDICATION,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_CHILD_MOVED,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_NWK_FC_FAILURE,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_APS_FC_FAILURE,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_APS_UNAUTHORIZED_KEY,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_NWK_DECRYPT_FAILURES,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_APS_DECRYPT_FAILURES,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_PACKET_BUFFER_ALLOCATE_FAILURES,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_RELAYED_UCAST,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_PHY_TO_MAC_QUEUE_LIMIT_REACHED,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_PACKET_VALIDATE_DROP_COUNT,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_AVERAGE_MAC_RETRY_PER_APS_MESSAGE_SENT,
-      ZCL_DATATYPE_UINT16,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_LAST_MESSAGE_LQI,
-      ZCL_DATATYPE_UINT8,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-  {
-    ZCL_CLUSTER_ID_HA_DIAGNOSTIC,
-    {  // Attribute record
-      ATTRID_DIAGNOSTIC_LAST_MESSAGE_RSSI,
-      ZCL_DATATYPE_INT8,
-      ACCESS_CONTROL_READ,
-      NULL // Use application's callback to Read this attribute
-    }
-  },
-#endif // ZCL_DIAGNOSTIC
+
+    // End of Added by Yang
+    //Custom attributes
+
 };
 
-uint8 CONST zclSampleLight_NumAttributes = ( sizeof(zclSampleLight_Attrs) / sizeof(zclSampleLight_Attrs[0]) );
+uint8 CONST zclSampleLight_NumAttributes = (sizeof(zclSampleLight_Attrs) / sizeof(zclSampleLight_Attrs[0]));
 
 /*********************************************************************
  * SIMPLE DESCRIPTOR
@@ -682,43 +842,43 @@ uint8 CONST zclSampleLight_NumAttributes = ( sizeof(zclSampleLight_Attrs) / size
 // specific cluster IDs.
 const cId_t zclSampleLight_InClusterList[] =
 {
-  ZCL_CLUSTER_ID_GEN_BASIC,
-  ZCL_CLUSTER_ID_GEN_IDENTIFY,
-  ZCL_CLUSTER_ID_GEN_GROUPS,
-  ZCL_CLUSTER_ID_GEN_SCENES,
-  ZCL_CLUSTER_ID_GEN_ON_OFF
+    ZCL_CLUSTER_ID_GEN_BASIC,
+    ZCL_CLUSTER_ID_GEN_IDENTIFY,
+    ZCL_CLUSTER_ID_GEN_GROUPS,
+    ZCL_CLUSTER_ID_GEN_SCENES,
+    ZCL_CLUSTER_ID_GEN_ON_OFF
 #ifdef ZCL_LEVEL_CTRL
-  , ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL
+    , ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL
 #endif
 };
 // work-around for compiler bug... IAR can't calculate size of array with #if options.
 #ifdef ZCL_LEVEL_CTRL
- #define ZCLSAMPLELIGHT_MAX_INCLUSTERS   6
+#define ZCLSAMPLELIGHT_MAX_INCLUSTERS   6
 #else
- #define ZCLSAMPLELIGHT_MAX_INCLUSTERS   5
+#define ZCLSAMPLELIGHT_MAX_INCLUSTERS   5
 #endif
 
 const cId_t zclSampleLight_OutClusterList[] =
 {
-  ZCL_CLUSTER_ID_GEN_BASIC
+    ZCL_CLUSTER_ID_GEN_BASIC
 };
 #define ZCLSAMPLELIGHT_MAX_OUTCLUSTERS  (sizeof(zclSampleLight_OutClusterList) / sizeof(zclSampleLight_OutClusterList[0]))
 
 SimpleDescriptionFormat_t zclSampleLight_SimpleDesc =
 {
-  SAMPLELIGHT_ENDPOINT,                  //  int Endpoint;
-  ZCL_HA_PROFILE_ID,                     //  uint16 AppProfId;
+    SAMPLELIGHT_ENDPOINT,                  //  int Endpoint;
+    ZCL_HA_PROFILE_ID,                     //  uint16 AppProfId;
 #ifdef ZCL_LEVEL_CTRL
-  ZCL_HA_DEVICEID_DIMMABLE_LIGHT,        //  uint16 AppDeviceId;
+    ZCL_HA_DEVICEID_DIMMABLE_LIGHT,        //  uint16 AppDeviceId;
 #else
-  ZCL_HA_DEVICEID_ON_OFF_LIGHT,          //  uint16 AppDeviceId;
+    ZCL_HA_DEVICEID_ON_OFF_LIGHT,          //  uint16 AppDeviceId;
 #endif
-  SAMPLELIGHT_DEVICE_VERSION,            //  int   AppDevVer:4;
-  SAMPLELIGHT_FLAGS,                     //  int   AppFlags:4;
-  ZCLSAMPLELIGHT_MAX_INCLUSTERS,         //  byte  AppNumInClusters;
-  (cId_t *)zclSampleLight_InClusterList, //  byte *pAppInClusterList;
-  ZCLSAMPLELIGHT_MAX_OUTCLUSTERS,        //  byte  AppNumInClusters;
-  (cId_t *)zclSampleLight_OutClusterList //  byte *pAppInClusterList;
+    SAMPLELIGHT_DEVICE_VERSION,            //  int   AppDevVer:4;
+    SAMPLELIGHT_FLAGS,                     //  int   AppFlags:4;
+    ZCLSAMPLELIGHT_MAX_INCLUSTERS,         //  byte  AppNumInClusters;
+    (cId_t *)zclSampleLight_InClusterList, //  byte *pAppInClusterList;
+    ZCLSAMPLELIGHT_MAX_OUTCLUSTERS,        //  byte  AppNumInClusters;
+    (cId_t *)zclSampleLight_OutClusterList //  byte *pAppInClusterList;
 };
 
 /*********************************************************************

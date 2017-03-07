@@ -27,6 +27,11 @@ typedef struct
 	uint16         param2;
 } peripheralCmd_t;
 
+typedef struct
+{
+  uint8  numAttr;
+  uint16 attrID[1];
+} peripheral_ReadCmd_t;
 
  /*
   * Initialization for the task

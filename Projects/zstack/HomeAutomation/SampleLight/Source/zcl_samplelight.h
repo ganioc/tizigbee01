@@ -125,6 +125,7 @@ extern void zclSampleLight_Init( byte task_id );
 extern UINT16 zclSampleLight_event_loop( byte task_id, UINT16 events );
 
 
+uint8 getSampleLightSequenceNum(void);
 
 /*********************************************************************
 *********************************************************************/
