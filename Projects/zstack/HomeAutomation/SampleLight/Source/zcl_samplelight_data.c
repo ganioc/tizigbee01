@@ -62,6 +62,7 @@
 #include "zcl_hvac.h"
 
 #include "zcl_samplelight.h"
+#include "cust_func.h"
 
 /*********************************************************************
  * CONSTANTS

@@ -30,6 +30,18 @@
 #define UNUSED_VARIABLE(X)  ((void)(X))
 
 
+// Added by Yang
+#define ATTRID_BASIC_SMARTGARDEN_HEARTBEAT_PERIOD               0x4001
+#define ATTRID_BASIC_SMARTGARDEN_ALARM_STATUS                      0x4002
+#define ATTRID_BASIC_SMARTGARDEN_PH_VALUE                      0x4003
+#define ATTRID_BASIC_SMARTGARDEN_TEMP                              0x4004
+#define ATTRID_BASIC_SMARTGARDEN_HUMIDITY                      0x4005
+#define ATTRID_BASIC_SMARTGARDEN_LIGHT_INTENSITY         0x4006
+#define ATTRID_BASIC_SMARTGARDEN_IRRIGATE_ONOFF          0x4007
+#define ATTRID_BASIC_SMARTGARDEN_STATE                            0x4008
+#define ATTRID_BASIC_SMARTGARDEN_CHIPID                           0x4009
+
+
 // default key pb3
 #define KEY_DEFAULT_BASE         GPIO_B_BASE
 #define KEY_DEFAULT_PIN          GPIO_PIN_3      //!< PB3
