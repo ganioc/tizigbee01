@@ -379,3 +379,4 @@ void beep_off()
 {
    GPIOPinWrite(BEEP_BASE, BEEP_PIN, BEEP_OFF);
 }
+

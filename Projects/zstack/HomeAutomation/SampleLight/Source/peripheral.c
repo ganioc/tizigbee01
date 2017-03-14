@@ -209,8 +209,7 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
         if(Heartbeat > 0){
           Heartbeat --;
         }else{
-          //TimerDisable(GPTIMER1_BASE, GPTIMER_BOTH);
-          //relay_turn_off();
+          relay_turn_off();
           //close the tune;
         }
         

@@ -82,6 +82,7 @@
 #define BEEP_ON                 GPIO_PIN_1
 #define BEEP_OFF                (GPIOPinRead(GPIO_A_BASE, GPIO_PIN_ALL) & (~GPIO_PIN_1)) 
 
+#define GPIO_PIN_ALL            0xFF
 
 #define MAX_DEFAULT_KEY_COUNTER  30
 
@@ -156,3 +157,4 @@ void beep_init(void);
 void beep_on();
 
 void beep_off();
+
