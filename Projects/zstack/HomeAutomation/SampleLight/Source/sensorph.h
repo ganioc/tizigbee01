@@ -12,4 +12,4 @@ uint8 read_dev_addr(void);
 
 bool write_dev_addr(void);
 
-double Read_Soil_Ph(void);
+uint16 Read_Soil_Ph(void);

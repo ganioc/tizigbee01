@@ -1,20 +1,26 @@
 #include "stdint.h" 
 #include "cust_func.h"
 #include "hal_uart.h"
+#include "hal_types.h"
 #include "OSAL_Memory.h"
 #include "OSAL.h"
 #include "sensor.h"
 #include "DebugTrace.h"
 
+extern uint16 zclSmartGarden_Temp;
+extern uint16 zclSmartGarden_Humidity;
+
+uint16 MaxReadCount = 0;
+
 uint8 read_temp_cmd[CMDLEN] = {SLAVE_ADDR, TEMP, TEMPRATURE_ADDR >> 8,
-                                          TEMPRATURE_ADDR & 0xFF, 0x00, 0x01};
+                                          TEMPRATURE_ADDR & 0xFF, 0x00, 0x01,0,0};
 
 uint8 read_humi_cmd[CMDLEN] = {SLAVE_ADDR, HUMI, VWC_ADDR >> 8,
                                           VWC_ADDR & 0xFF, 0x00, 0x01};
 
-uint8 check_cmd[CMDLEN] = {SLAVE_ADDR, SLAVE, SLAVE_REG >> 8, 
-                                          SLAVE_REG & 0xFF, 0x00, 0x01};
-double Read_Soil_Temp()
+uint8 check_cmd[CMDLEN] = {SLAVE_ADDR, SLAVE, (SLAVE_REG >> 8)&0xff, 
+                                          SLAVE_REG & 0xFF, 0x00, 0x01,0x0,0x0};
+uint16 Read_Soil_Temp()
 { 
   uint16 crc = Cal_Crc16(read_temp_cmd, CMDLEN - 2);
   read_temp_cmd[CMDLEN - 2] = crc &0xFF;
@@ -23,12 +29,19 @@ double Read_Soil_Temp()
    // debug_str(pbuf);
 
   cust_uart_write(read_temp_cmd, CMDLEN);
+  
   uint8 recvlen = 0;
   while(!(recvlen = cust_uart_rxlen())){
+    MaxReadCount ++;
+    if(MaxReadCount >= 0xFF){
+      MaxReadCount = 0;
+      return TEMP_ERR;
+    }
+    cust_delay_2ms();
   }
   uint8 *recvdata = NULL;
   recvdata = osal_mem_alloc(recvlen);
-  double realtemp = 0;
+  uint16 realtemp = 0;
   if(recvdata != NULL){
     cust_uart_read(recvdata, recvlen);
     if(!Cal_Crc16(recvdata, recvlen)){
@@ -36,25 +49,26 @@ double Read_Soil_Temp()
       len = recvdata[2];
       if(len > 0){
           if(!(recvdata[3] & (1 << 7))){
-            realtemp = (double)(recvdata[3] * 256 + recvdata[4]) / 100;
+            realtemp = (recvdata[3] * 256 + recvdata[4]) / 100; 
           }
           else{
-            realtemp = ((double)(recvdata[3] * 256 + recvdata[4]) - 0xFFFF -1) / 100;
+            realtemp = ((recvdata[3] * 256 + recvdata[4]) - 0xFFFF -1) / 100;
           }
+          zclSmartGarden_Temp = realtemp;
       }
     osal_mem_free(recvdata);
-    return realtemp;
+    return SENSOR_SUCC;
     }else{
       osal_mem_free(recvdata);
-      return ERR_STAT;
+      return TEMP_ERR;
     }
   }else{
-    return ERR_STAT;
+    return TEMP_ERR;
   }
 }
 
 
-double Read_Soil_Humi()
+uint16 Read_Soil_Humi()
 {
 
   uint16 crc = Cal_Crc16(read_humi_cmd, CMDLEN - 2);
@@ -64,20 +78,26 @@ double Read_Soil_Humi()
   cust_uart_write(read_humi_cmd, CMDLEN);
   uint8 recvlen = 0;
   while(!(recvlen = cust_uart_rxlen())){
+     MaxReadCount ++;
+    if(MaxReadCount >= 0xFF){
+      MaxReadCount = 0;
+      return TEMP_ERR;
+    }
   }
   uint8 *recvdata = NULL;
   recvdata = osal_mem_alloc(recvlen);
-  cust_uart_read(recvdata, recvlen);
-  double realhumi;
+  uint16 realhumi;
   if(recvdata != NULL){
+    cust_uart_read(recvdata, recvlen);
     if(!Cal_Crc16(recvdata, recvlen)){
       uint8 len = 0;
       len = recvdata[2];
       if(len > 0){
-            realhumi = (double)(recvdata[3] * 256 + recvdata[4]) / 10000;
+            realhumi = (recvdata[3] * 256 + recvdata[4]) / 100; //(%)
       }
     osal_mem_free(recvdata);
-    return realhumi;
+    zclSmartGarden_Humidity = realhumi;
+    return SENSOR_SUCC;
     }else{
       osal_mem_free(recvdata);
       return ERR_STAT;

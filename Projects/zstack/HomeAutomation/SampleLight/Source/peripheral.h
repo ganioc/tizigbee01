@@ -13,6 +13,8 @@ extern "C"
 
 #define PERIPH_TEST_EVENT   1
 #define PERIPH_RESET_EVENT  2
+#define PERIPH_SENSOR_UPDATE 8
+#define PERIPH_HEARTBEAT_REPORT 4
   
 #define PERIPH_TEST_CMD1    0
 #define PERIPH_TEST_CMD2    1 

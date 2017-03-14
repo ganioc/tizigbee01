@@ -6,9 +6,13 @@
 #include "hal_types.h"
 #include "rom.h"
 #include "sys_ctrl.h"
+#include "peripheral.h"
 
-uint16 chipID = 0;
-void cust_timer_init()
+extern byte peripheral_TaskID;
+extern uint16 zclSmartGarden_HeartbeatPeriod;
+extern uint16 zclSmartGarden_ChipId;
+
+void cust_timer_init(uint8 period)
 {
   SysCtrlPeripheralEnable(SYS_CTRL_PERIPH_GPT1);
   
@@ -16,7 +20,7 @@ void cust_timer_init()
   TimerIntDisable(GPTIMER1_BASE, GPTIMER_TIMA_TIMEOUT);
   TimerConfigure(GPTIMER1_BASE, GPTIMER_CFG_PERIODIC);
   
-  TimerLoadSet(GPTIMER1_BASE, GPTIMER_BOTH, SysCtrlClockGet() * 5);
+  TimerLoadSet(GPTIMER1_BASE, GPTIMER_BOTH, SysCtrlClockGet() * period);
   TimerIntRegister(GPTIMER1_BASE, GPTIMER_BOTH, Timer1_Handler);
   
   TimerIntEnable(GPTIMER1_BASE, GPTIMER_TIMA_TIMEOUT);
@@ -25,7 +29,8 @@ void cust_timer_init()
 
 void Timer1_Handler()
 {
-  chipID = ROM_GetChipId();
   while(GPTIMER_TIMA_TIMEOUT != TimerIntStatus(GPTIMER1_BASE, TRUE));
+  zclSmartGarden_ChipId = ROM_GetChipId();
+  osal_set_event(peripheral_TaskID, PERIPH_HEARTBEAT_REPORT);
   TimerIntClear(GPTIMER1_BASE,  GPTIMER_TIMA_TIMEOUT);
 }

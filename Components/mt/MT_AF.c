@@ -49,6 +49,7 @@
 #include "nwk.h"
 #include "OnBoard.h"
 #include "MT_UART.h"
+#include "DebugTrace.h"
 
 #if defined INTER_PAN
 #include "stub_aps.h"

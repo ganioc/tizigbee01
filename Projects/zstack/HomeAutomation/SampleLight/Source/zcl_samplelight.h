@@ -129,6 +129,11 @@ uint8 getSampleLightSequenceNum(void);
 
 /*********************************************************************
 *********************************************************************/
+typedef struct Identify_Tab{
+   UINT16 shortAddr;
+   UINT16 sn;
+   struct Identify_Tab *next;
+}Identify_List;
 
 #ifdef __cplusplus
 }

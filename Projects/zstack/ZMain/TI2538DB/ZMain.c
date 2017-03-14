@@ -63,7 +63,11 @@
 #endif
 
 #include "cust_func.h"
-
+#include "peripheral.h"
+#include "cust_timer.h"
+#include "hal_led.h"
+extern byte peripheral_TaskID;
+extern uint16 zclSmartGarden_HeartbeatPeriod;
 /******************************************************************************
  * LOCAL DEFINITIONS
  */
@@ -95,8 +99,14 @@ static void zmain_lcd_init( void );
  *
  * @return  Don't care
  */
+uint8 val = 0;
+
 int main( void )
 {
+  //turn off the relay
+  relay_init();
+  
+  
   // Turn off interrupts
   osal_int_disable( INTS_ALL );
 
@@ -156,10 +166,23 @@ int main( void )
   cust_bspLedInit();
   CUST_LED1_OFF();
   CUST_LED2_OFF();
-  
+  HalLedSet(HAL_LED_1, HAL_LED_MODE_ON);
   cust_uart_init();
   cust_uart_open();  
+  //relay_turn_on();
+  beep_init();
+  //===================================uart test=======================================================
+  uint8 uart0_arr[] = {0x00, 0x02, 0x04, 0x06, 0x08, 0x10};
   
+  uint8 uart1_arr[] = {0x01, 0x03, 0x05, 0x07, 0x09};
+
+  while(1){
+    cust_uart_write(uart1_arr, 5);
+    cust_delay_100ms(1);
+    HalUARTWrite(HAL_UART_PORT_0, uart0_arr, 6);
+    cust_delay_100ms(1);
+  }
+ //======================================uart test=======================================================
   cust_uart_print("\nWait setting mode ...\n");
   
   wait_setting_mode(1);
@@ -170,9 +193,13 @@ int main( void )
   //cust_delay_100ms(60);
   
   cust_uart_print("\nPeriph uart mode\n");
-
-	
-
+  
+   //
+#ifndef ZDO_COORDINATOR
+  osal_start_timerEx(peripheral_TaskID, PERIPH_SENSOR_UPDATE, 10 * 1000); //start read sensor after 5min
+  cust_timer_init(zclSmartGarden_HeartbeatPeriod);
+#endif
+  
   osal_start_system(); // No Return from here
 
   return 0;  // Shouldn't get here.

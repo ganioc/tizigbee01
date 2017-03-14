@@ -87,6 +87,8 @@
 #include "hal_lcd.h"
 #include "hal_led.h"
 #include "hal_key.h"
+#include "cust_func.h"
+#include "gptimer.h"
 
 #if ( defined (ZGP_DEVICE_TARGET) || defined (ZGP_DEVICE_TARGETPLUS) \
       || defined (ZGP_DEVICE_COMBO) || defined (ZGP_DEVICE_COMBO_MIN) )
@@ -135,8 +137,9 @@
  */
 byte zclSampleLight_TaskID;
 uint8 zclSampleLightSeqNum = 0;
-
-
+Identify_List *Id_Header = NULL;
+uint8 Heartbeat;
+extern uint8 peripheralSeqNum;
 /*********************************************************************
  * GLOBAL FUNCTIONS
  */
@@ -474,8 +477,7 @@ uint16 zclSampleLight_event_loop(uint8 task_id, uint16 events)
                     break;
                 case AF_DATA_CONFIRM_CMD:
                     
-                    
-                    debug_str("Recv af_data_confirm_cmd");
+                    //debug_str("Recv af_data_confirm_cmd");
                     break;
                 default:
                     cust_debug_str("zclSampleLight_event_loop %d unrecognized", MSGpkt->hdr.event);
@@ -765,11 +767,11 @@ static void zclSampleLight_DisplayLight(void)
     // set the LED1 based on light (on or off)
     if(zclSampleLight_OnOff == LIGHT_ON)
     {
-        HalLedSet(HAL_LED_1, HAL_LED_MODE_ON);
+        HalLedSet(HAL_LED_3, HAL_LED_MODE_ON);
     }
     else
     {
-        HalLedSet(HAL_LED_1, HAL_LED_MODE_OFF);
+        HalLedSet(HAL_LED_3, HAL_LED_MODE_OFF);
     }
 
 #ifdef LCD_SUPPORTED
@@ -1421,7 +1423,7 @@ static void zclSampleLight_LevelControlStopCB(void)
  */
 static void zclSampleLight_ProcessIncomingMsg(zclIncomingMsg_t *pInMsg)
 {
-    cust_debug_str("ProcessIncomingMsg  %d", pInMsg->zclHdr.commandID);
+   // cust_debug_str("ProcessIncomingMsg  %d", pInMsg->zclHdr.commandID);
     
     switch(pInMsg->zclHdr.commandID)
     {
@@ -1505,10 +1507,14 @@ static uint8 zclSampleLight_ProcessInReadRspCmd(zclIncomingMsg_t *pInMsg)
     uint8  onOff;
     uint8  period;
     
+    uint16 soil_ph;
+    uint16 soil_temp;
+    uint16 soil_humi;
+    
     readRspCmd = (zclReadRspCmd_t *)pInMsg->attrCmd;
 
     cust_debug_str("pinmsg clusterid:%d", pInMsg->clusterId);
-
+    cust_debug_str("%s",pInMsg->attrCmd);
     //CUST_LED1_TOOGLE();
 
     switch(pInMsg->clusterId){
@@ -1524,10 +1530,29 @@ static uint8 zclSampleLight_ProcessInReadRspCmd(zclIncomingMsg_t *pInMsg)
             break;
         case ZCL_CLUSTER_ID_GEN_BASIC:
             // get heartbeat period
+          switch(readRspCmd ->attrList[0].attrID){
+            
+          case ATTRID_BASIC_SMARTGARDEN_HEARTBEAT_PERIOD:
             period = *((uint8*)readRspCmd->attrList[0].data);
-
             cust_debug_str("%d seconds", period);
             break;
+            
+          case ATTRID_BASIC_SMARTGARDEN_PH_VALUE:
+            soil_ph = *((uint16*)readRspCmd->attrList[0].data);
+            cust_debug_str("the soil ph %d", soil_ph);
+            break;
+            
+          case ATTRID_BASIC_SMARTGARDEN_TEMP:
+            soil_temp = *((uint16*)readRspCmd->attrList[0].data);
+            cust_debug_str("the soil temp %d", soil_temp);
+            break;
+          case ATTRID_BASIC_SMARTGARDEN_HUMIDITY:
+            soil_humi = *((uint16*)readRspCmd->attrList[0].data);
+            cust_debug_str("the soil humi %d", soil_humi);
+            break;
+          default : debug_str("unknown attrID");
+          }
+            
         default:
             break;
     }
@@ -1806,10 +1831,82 @@ static void zclSampleLight_EZModeCB(zlcEZMode_State_t state, zclEZMode_CBData_t 
 #endif // ZCL_EZMODE
 
 #ifdef ZCL_REPORT
+
 static void zclSampleLight_ProcessInReportCmd(zclIncomingMsg_t *pInMsg)
 {
-    cust_debug_str("Report");
+    zclReportCmd_t* reportRsp = (zclReportCmd_t *)pInMsg->attrCmd;
+    switch(reportRsp->attrList[0].attrID){
+      
+    case  ATTRID_BASIC_SMARTGARDEN_CHIPID :
+      {
+        cust_debug_str("Heartbeat Report");
+        zclReportCmd_t  *reportCmd;
+        reportCmd = osal_mem_alloc(sizeof(zclReportCmd_t ) + sizeof(zclReport_t));
+        
+        if(reportCmd){
+          
+            reportCmd->numAttr = 1;
+            reportCmd->attrList[0].attrID = ATTRID_BASIC_SMARTGARDEN_CHIPID_ACK;
 
+            zcl_SendReportCmd(
+                8, 
+                &(pInMsg->srcAddr), 
+                ZCL_CLUSTER_ID_GEN_BASIC, 
+                reportCmd, 
+                ZCL_FRAME_CLIENT_SERVER_DIR,
+                0, 
+                peripheralSeqNum++);
+            
+            osal_mem_free(reportCmd);
+        }
+      }
+      break;
+      
+    case ATTRID_BASIC_SMARTGARDEN_CHIPID_ACK :
+         cust_debug_str("Heartbeat ACK");
+         
+         //TimerEnable(GPTIMER1_BASE, GPTIMER_BOTH);
+         relay_turn_on();
+         
+         Heartbeat = 3;
+         break;
+     case ATTRID_BASIC_SMARTGARDEN_ALARM_STATUS:
+       {
+         uint16 state = 0;
+         state = *(uint16 *)(reportRsp->attrList[0].attrData); 
+         if(state & ZCLSMARTGARDEN_STATE_ERR_TEMP_HUMI){
+            debug_str("sensor temp_humi err!");
+         }
+         if(state & ZCLSMARTGARDEN_STATE_ERR_PH){
+            debug_str("sensor ph err!");
+         }
+         break;
+       }
+    default : debug_str("unknown report attr");
+    }
+    
+    
+    /*
+    afAddrType_t *SrcAddr = (afAddrType_t *)&(pInMsg -> srcAddr);
+    Identify_List *Id_Node = NULL, *temp = NULL;
+    for(Id_Node = Id_Header, temp = Id_Header; Id_Node; temp = Id_Node, Id_Node = Id_Header->next){
+      if(Id_Node->shortAddr == SrcAddr->addr.shortAddr){
+        break;
+      }
+    }
+    if(!Id_Node){
+      Id_Node = osal_mem_alloc(sizeof(Identify_List));
+      if(Id_Node){
+        if(!Id_Header){
+          Id_Header = Id_Node;
+        }
+        Id_Node->shortAddr = SrcAddr->addr.shortAddr;
+        temp->next = Id_Node;
+        Id_Node->next = NULL;
+      }
+    }
+    */
+    
 }
 #endif // ZCL_REPORT
 
