@@ -356,19 +356,34 @@ void peripheralCoordinator_ProcessIncomingCommand(peripheralCmd_t *msg_ptr)
     {
         //zclGeneral_SendOnOff_CmdToggle( SAMPLESW_ENDPOINT, &zclSampleSw_DstAddr, FALSE, 0 );
 
-
+        /*
         status = zclGeneral_SendOnOff_CmdToggle(
                      8,
                      &zclSample_DstAddr,
                      true,
                      0
                  );
+         */
+
+        status = zcl_SendCommand( 
+            (8), 
+            (&zclSample_DstAddr), 
+            ZCL_CLUSTER_ID_GEN_ON_OFF, 
+            COMMAND_TOGGLE, 
+            TRUE, 
+            ZCL_FRAME_CLIENT_SERVER_DIR, 
+            (true), 
+            0, 
+            (0), 
+            0, 
+            NULL );
 
         cust_debug_str("status toggle %d", status);
 
     }
     else if(msg_ptr->cmdID == FUNC_TURN_ON_LIGHT_CMG)
     {
+        /*
         status = zclGeneral_SendOnOff_CmdOn(
                      8,
                      &zclSample_DstAddr,
@@ -376,17 +391,46 @@ void peripheralCoordinator_ProcessIncomingCommand(peripheralCmd_t *msg_ptr)
                      0
                  );
 
+                 */
+
+        status = zcl_SendCommand( 
+            (8), 
+            (&zclSample_DstAddr), 
+            ZCL_CLUSTER_ID_GEN_ON_OFF, 
+            COMMAND_ON, 
+            TRUE, 
+            ZCL_FRAME_CLIENT_SERVER_DIR,
+            (true), 
+            0, 
+            (0), 
+            0, 
+            NULL );
+
         cust_debug_str("son %d", status);
 
     }
     else if(msg_ptr->cmdID == FUNC_TURN_OFF_LIGHT_CMD)
     {
+        /*
         status = zclGeneral_SendOnOff_CmdOff(
                      8,
                      &zclSample_DstAddr,
                      true,
                      0
                  );
+                 */
+        status = zcl_SendCommand( 
+            (8), 
+            (&zclSample_DstAddr), 
+            ZCL_CLUSTER_ID_GEN_ON_OFF, 
+            COMMAND_OFF, 
+            TRUE, 
+            ZCL_FRAME_CLIENT_SERVER_DIR, 
+            (true),
+            0, 
+            (0), 
+            0, 
+            NULL );
 
         cust_debug_str("so %d", status);
 
@@ -594,7 +638,96 @@ void peripheralCoordinator_ProcessIncomingCommand(peripheralCmd_t *msg_ptr)
                 
         }
     }
-    
+    else if(msg_ptr->cmdID == FUNC_IDENTIFYING_CMD){
+        status = zcl_SendCommand( 
+            (8), 
+            (&zclSample_DstAddr), 
+            ZCL_CLUSTER_ID_GEN_ON_OFF, 
+            COMMAND_IDENTIFYING, 
+            TRUE, 
+            ZCL_FRAME_CLIENT_SERVER_DIR, 
+            (true),
+            0, 
+            (0), 
+            0, 
+            NULL );
+
+        cust_debug_str("identifying %d", status);
+
+    }
+    else if(msg_ptr->cmdID == FUNC_READ_IRRIGATE_CMD){
+        //read light status
+        readCmd = osal_mem_alloc(sizeof(zclReadCmd_t) + sizeof(uint16));
+
+        if(readCmd){
+          
+            readCmd->numAttr = 1;
+            readCmd->attrID[0] = ATTRID_BASIC_SMARTGARDEN_IRRIGATE_ONOFF;
+
+            zcl_SendRead(
+                8, 
+                &zclSample_DstAddr, 
+                ZCL_CLUSTER_ID_GEN_BASIC, 
+                readCmd, 
+                ZCL_FRAME_CLIENT_SERVER_DIR,
+                0, 
+                peripheralSeqNum++);
+            osal_mem_free(readCmd);
+                
+        }
+
+    }
+    else if(msg_ptr->cmdID == FUNC_TURN_ON_IRRIGATE_CMD){
+            status = zcl_SendCommand( 
+            (8), 
+            (&zclSample_DstAddr), 
+            ZCL_CLUSTER_ID_GEN_ON_OFF, 
+            COMMAND_TURN_ON_IRRIGATE, 
+            TRUE, 
+            ZCL_FRAME_CLIENT_SERVER_DIR, 
+            (true),
+            0, 
+            (peripheralSeqNum++), 
+            0, 
+            NULL );
+
+        cust_debug_str("turnon irrigate %d", status);
+    }
+    else if(msg_ptr->cmdID == FUNC_TURN_OFF_IRRIGATE_CMD){
+            status = zcl_SendCommand( 
+            (8), 
+            (&zclSample_DstAddr), 
+            ZCL_CLUSTER_ID_GEN_ON_OFF, 
+            COMMAND_TURN_OFF_IRRIGATE, 
+            TRUE, 
+            ZCL_FRAME_CLIENT_SERVER_DIR, 
+            (true),
+            0, 
+            (peripheralSeqNum++), 
+            0, 
+            NULL );
+
+        cust_debug_str("turnoff irrigate %d", status);
+    }
+    else if(msg_ptr->cmdID == FUNC_TURN_ON_PERMITJOINING_CMD){
+            status = zcl_SendCommand( 
+            (8), 
+            (&zclSample_DstAddr), 
+            ZCL_CLUSTER_ID_GEN_ON_OFF, 
+            COMMAND_TURN_ON_PERMIT_JOINING, 
+            TRUE, 
+            ZCL_FRAME_CLIENT_SERVER_DIR, 
+            (true),
+            0, 
+            (peripheralSeqNum++), 
+            0, 
+            NULL );
+
+        cust_debug_str("turnoff irrigate %d", status);
+    }    
+    else{
+            debug_str("Unknown cmdId");
+    }
 }
 
 

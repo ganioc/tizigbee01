@@ -30,6 +30,10 @@
 #define UNUSED_VARIABLE(X)  ((void)(X))
 
 
+
+//#define ZCL_CLUSTER_ID_SMARTGARDEN                           0x2000
+
+
 // Added by Yang
 #define ATTRID_BASIC_SMARTGARDEN_HEARTBEAT_PERIOD               0x4001
 #define ATTRID_BASIC_SMARTGARDEN_ALARM_STATUS                      0x4012
@@ -45,11 +49,15 @@
 #define ATTRID_BASIC_SMARTGARDEN_DEVICE_TYPE                  0x4012
 
 //Coordinator cmdID
-#define FUNC_TURN_OFF_LIGHT_CMD                         0x0
+#define FUNC_TURN_OFF_LIGHT_CMD                        0x0
 #define FUNC_TURN_ON_LIGHT_CMG                          0x1
-#define FUNC_LIGHT_TOGGLE_CMD                           0x2
-#define FUNC_READ_ATTR_CMD                              0x10
-#define FUNC_READ_LIGHT_STA_CMD                         0x11
+#define FUNC_LIGHT_TOGGLE_CMD                            0x2
+//#define FUNC_TURN_OFF_IRRIGATE_CMD                  0x3
+//#define FUNC_TURN_ON_IRRIGATE_CMD                    0x4
+#define FUNC_IDENTIFYING_CMD                               0x3
+
+#define FUNC_READ_ATTR_CMD                                          0x10
+#define FUNC_READ_LIGHT_STA_CMD                                0x11
 #define FUNC_READ_HEATBEAT_PERIOD_CMD                   0x12
 #define FUNC_SET_HEARTBEAT_PERIOD_30_CMD                0x13
 #define FUNC_SET_HEARTBEAT_PERIOD_15_CMD                0x14
@@ -57,7 +65,10 @@
 #define FUNC_READ_SOIL_TEMP_CMD                         0x30
 #define FUNC_READ_SOIL_HUMI_CMD                         0x31
 #define FUNC_READ_SOIL_PH_CMD                           0x32
-
+#define FUNC_READ_IRRIGATE_CMD                            0x40
+#define FUNC_TURN_ON_IRRIGATE_CMD                          0x41
+#define FUNC_TURN_OFF_IRRIGATE_CMD                          0x42
+#define FUNC_TURN_ON_PERMITJOINING_CMD                          0x43
 
 //SENSOR ERR STATE
 #define ZCLSMARTGARDEN_STATE_ERR_TEMP_HUMI   0x01
