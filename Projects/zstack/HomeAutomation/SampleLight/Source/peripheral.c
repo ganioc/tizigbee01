@@ -117,7 +117,7 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
     if(events & PERIPH_RESET_EVENT)
     {
         //SystemReset();
-        sys_recover();
+        //sys_recover();
         peripheral_reset();
 
     }
