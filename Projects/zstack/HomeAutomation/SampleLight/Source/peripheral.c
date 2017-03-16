@@ -38,6 +38,7 @@ extern uint8 zclSmartGarden_HeartbeatPeriod;
 extern uint16 zclSmartGarden_ChipId;
 extern uint16   zclSmartGarden_AlarmStatus;
 extern uint8 Heartbeat;
+extern uint16    zclSmartGarden_DeviceType;
 
 afAddrType_t zclSample_CoorAddr;
 
@@ -185,15 +186,25 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
       
       
       zclReportCmd_t  *reportCmd;
-      reportCmd = osal_mem_alloc(sizeof(zclReportCmd_t ) + sizeof(zclReport_t));
+      reportCmd = osal_mem_alloc(sizeof(zclReportCmd_t ) + 2*sizeof(zclReport_t));
         
         if(reportCmd){
-          
+          /*
             reportCmd->numAttr = 1;
             reportCmd->attrList[0].attrID = ATTRID_BASIC_SMARTGARDEN_CHIPID;
             reportCmd->attrList[0].dataType = ZCL_DATATYPE_UINT16;
             reportCmd->attrList[0].attrData = (uint8 *)&zclSmartGarden_ChipId;
+            */
 
+            reportCmd->numAttr = 2;
+            reportCmd->attrList[0].attrID = ATTRID_BASIC_SMARTGARDEN_CHIPID;
+            reportCmd->attrList[0].dataType = ZCL_DATATYPE_UINT16;
+            reportCmd->attrList[0].attrData = (uint8 *)&zclSmartGarden_ChipId;
+            
+            reportCmd->attrList[1].attrID = ATTRID_BASIC_SMARTGARDEN_DEVICE_TYPE;
+            reportCmd->attrList[1].dataType = ZCL_DATATYPE_UINT16;
+            reportCmd->attrList[1].attrData = (uint8 *)&zclSmartGarden_DeviceType;
+            
             
 
             zcl_SendReportCmd(

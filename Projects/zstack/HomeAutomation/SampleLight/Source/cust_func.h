@@ -40,8 +40,9 @@
 #define ATTRID_BASIC_SMARTGARDEN_IRRIGATE_ONOFF          0x4007
 #define ATTRID_BASIC_SMARTGARDEN_STATE                            0x4008
 #define ATTRID_BASIC_SMARTGARDEN_CHIPID                           0x4009
-#define ATTRID_BASIC_SMARTGARDEN_CHIPID_ACK                     0x4010
+#define ATTRID_BASIC_SMARTGARDEN_CHIPID_ACK                   0x4010
 #define ATTRID_BASIC_SMARTGARDEN_ATTR_LIST                      0x4011
+#define ATTRID_BASIC_SMARTGARDEN_DEVICE_TYPE                  0x4012
 
 //Coordinator cmdID
 #define FUNC_TURN_OFF_LIGHT_CMD                         0x0
@@ -90,6 +91,10 @@
 #define LED_BASE          GPIO_B_BASE
 #define LED_PIN1          GPIO_PIN_4  
 #define LED_PIN2          GPIO_PIN_5  
+
+// device type
+#define DEVICE_TYPE_BASIC  0x1001
+#define DEVICE_TYPE_PRO      0x1002   //´øÆøÏóÕ¾
 
 
 #define CUST_LED1_ON()    GPIOPinWrite(LED_BASE, LED_PIN1, ~LED_PIN1)

@@ -133,7 +133,7 @@ uint16  zclSmartGarden_LightIntensity = 0;
 uint8   zclSmartGarden_IrrigateOnOff = 0;
 uint8   zclSmartGarden_State = 0;
 uint16  zclSmartGarden_ChipId = 0;
-
+uint16  zclSmartGarden_DeviceType = DEVICE_TYPE_BASIC;
 
 #if ZCL_DISCOVER
 CONST zclCommandRec_t zclSampleLight_Cmds[] =

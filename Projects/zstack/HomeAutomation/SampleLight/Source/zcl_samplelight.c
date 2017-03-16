@@ -140,6 +140,7 @@ uint8 zclSampleLightSeqNum = 0;
 Identify_List *Id_Header = NULL;
 uint8 Heartbeat;
 extern uint8 peripheralSeqNum;
+extern uint16 zclSmartGarden_DeviceType;
 
 uint8  mGlobalState;
 
@@ -417,6 +418,9 @@ void zclSampleLight_Init(byte task_id)
 #ifdef ZGP_AUTO_TT
     zgpTranslationTable_RegisterEP(&zclSampleLight_SimpleDesc);
 #endif
+
+
+    zclSmartGarden_DeviceType = DEVICE_TYPE_BASIC;
 
     debug_str("End of _Init()");
 }
@@ -1842,13 +1846,27 @@ static void zclSampleLight_EZModeCB(zlcEZMode_State_t state, zclEZMode_CBData_t 
 static void zclSampleLight_ProcessInReportCmd(zclIncomingMsg_t *pInMsg)
 {
     zclReportCmd_t* reportRsp = (zclReportCmd_t *)pInMsg->attrCmd;
+    uint16 nDeviceType; 
+    uint16 nTemp;
+    
     switch(reportRsp->attrList[0].attrID){
       
     case  ATTRID_BASIC_SMARTGARDEN_CHIPID :
       {
-        cust_debug_str("Heartbeat Report");
+
+
         zclReportCmd_t  *reportCmd;
         reportCmd = osal_mem_alloc(sizeof(zclReportCmd_t ) + sizeof(zclReport_t));
+
+
+        nTemp = reportRsp->attrList[1].attrData[1] << 8;
+        cust_debug_str(
+            "Heartbeat Report num:%d  type:%d %d type:%d", 
+            reportRsp->numAttr,
+            reportRsp->attrList[1].attrData[0],
+            reportRsp->attrList[1].attrData[1],
+            nTemp + reportRsp->attrList[1].attrData[0]
+        );
         
         if(reportCmd){
           
