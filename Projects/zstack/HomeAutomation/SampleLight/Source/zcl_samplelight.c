@@ -1861,11 +1861,11 @@ static void zclSampleLight_ProcessInReportCmd(zclIncomingMsg_t *pInMsg)
 
         nTemp = reportRsp->attrList[1].attrData[1] << 8;
         cust_debug_str(
-            "Heartbeat Report num:%d  type:%d %d type:%d", 
+            "Heartbeat Report num:%d  type:%d addr:%d chipid:%d", 
             reportRsp->numAttr,
-            reportRsp->attrList[1].attrData[0],
-            reportRsp->attrList[1].attrData[1],
-            nTemp + reportRsp->attrList[1].attrData[0]
+            nTemp + reportRsp->attrList[1].attrData[0],
+            pInMsg->srcAddr.addr.shortAddr,
+            (reportRsp->attrList[0].attrData[1] << 8) + (reportRsp->attrList[0].attrData[0])
         );
         
         if(reportCmd){

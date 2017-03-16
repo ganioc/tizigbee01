@@ -196,6 +196,8 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
             reportCmd->attrList[0].attrData = (uint8 *)&zclSmartGarden_ChipId;
             */
 
+            cust_debug_str("chipid:%d", zclSmartGarden_ChipId);
+
             reportCmd->numAttr = 2;
             reportCmd->attrList[0].attrID = ATTRID_BASIC_SMARTGARDEN_CHIPID;
             reportCmd->attrList[0].dataType = ZCL_DATATYPE_UINT16;

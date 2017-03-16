@@ -124,7 +124,7 @@ uint8  zclSampleLight_LevelDefaultMoveRate = 0;   // as fast as possible
 #endif
 
 // Custom Attribute
-uint16    zclSmartGarden_HeartbeatPeriod = 10; // in seconds
+uint16    zclSmartGarden_HeartbeatPeriod = 20; // in seconds
 uint16  zclSmartGarden_AlarmStatus = 0;
 uint16  zclSmartGarden_PHValue = 10;
 uint16 zclSmartGarden_Temp = 15;

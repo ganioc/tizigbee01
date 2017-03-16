@@ -31,6 +31,8 @@ void Timer1_Handler()
 {
   while(GPTIMER_TIMA_TIMEOUT != TimerIntStatus(GPTIMER1_BASE, TRUE));
   zclSmartGarden_ChipId = ROM_GetChipId();
+
+  
   osal_set_event(peripheral_TaskID, PERIPH_HEARTBEAT_REPORT);
   TimerIntClear(GPTIMER1_BASE,  GPTIMER_TIMA_TIMEOUT);
 }
