@@ -104,7 +104,7 @@ uint8 val = 0;
 int main( void )
 {
   //turn off the relay
-  relay_init();
+  //relay_init();
   
   
   // Turn off interrupts
@@ -166,23 +166,12 @@ int main( void )
   cust_bspLedInit();
   CUST_LED1_OFF();
   CUST_LED2_OFF();
-  HalLedSet(HAL_LED_1, HAL_LED_MODE_ON);
+  //HalLedSet(HAL_LED_1, HAL_LED_MODE_ON);
   cust_uart_init();
   cust_uart_open();  
   //relay_turn_on();
-  beep_init();
-  //===================================uart test=======================================================
-  uint8 uart0_arr[] = {0x00, 0x02, 0x04, 0x06, 0x08, 0x10};
+  //beep_init();
   
-  uint8 uart1_arr[] = {0x01, 0x03, 0x05, 0x07, 0x09};
-
-  while(1){
-    cust_uart_write(uart1_arr, 5);
-    cust_delay_100ms(1);
-    HalUARTWrite(HAL_UART_PORT_0, uart0_arr, 6);
-    cust_delay_100ms(1);
-  }
- //======================================uart test=======================================================
   cust_uart_print("\nWait setting mode ...\n");
   
   wait_setting_mode(1);
@@ -196,7 +185,7 @@ int main( void )
   
    //
 #ifndef ZDO_COORDINATOR
-  osal_start_timerEx(peripheral_TaskID, PERIPH_SENSOR_UPDATE, 10 * 1000); //start read sensor after 5min
+  //osal_start_timerEx(peripheral_TaskID, PERIPH_SENSOR_UPDATE, 10 * 1000); //start read sensor after 5min
   cust_timer_init(zclSmartGarden_HeartbeatPeriod);
 #endif
   
