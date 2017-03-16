@@ -140,6 +140,10 @@ uint8 zclSampleLightSeqNum = 0;
 Identify_List *Id_Header = NULL;
 uint8 Heartbeat;
 extern uint8 peripheralSeqNum;
+
+uint8  mGlobalState;
+
+
 /*********************************************************************
  * GLOBAL FUNCTIONS
  */
@@ -508,7 +512,7 @@ uint16 zclSampleLight_event_loop(uint8 task_id, uint16 events)
     {
         debug_str("Recv SAMPLELIGHT_MAIN_SCREEN_EVT");
         giLightScreenMode = LIGHT_MAINMODE;
-        zclSampleLight_LcdDisplayUpdate();
+        //zclSampleLight_LcdDisplayUpdate();
 
         return (events ^ SAMPLELIGHT_MAIN_SCREEN_EVT);
     }
@@ -703,7 +707,7 @@ static void zclSampleLight_HandleKeys(byte shift, byte keys)
     }
 
     // update the display, including the light
-    zclSampleLight_LcdDisplayUpdate();
+    //zclSampleLight_LcdDisplayUpdate();
 }
 
 /*********************************************************************
@@ -1029,7 +1033,7 @@ static void zclSampleLight_OnOffCB(uint8 cmd)
 #endif
 
     // update the display
-    zclSampleLight_LcdDisplayUpdate();
+    //zclSampleLight_LcdDisplayUpdate();
 }
 
 #ifdef ZCL_LEVEL_CTRL

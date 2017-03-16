@@ -194,6 +194,8 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
             reportCmd->attrList[0].dataType = ZCL_DATATYPE_UINT16;
             reportCmd->attrList[0].attrData = (uint8 *)&zclSmartGarden_ChipId;
 
+            
+
             zcl_SendReportCmd(
                 8, 
                 &zclSample_CoorAddr, 
@@ -206,6 +208,9 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
             osal_mem_free(reportCmd);
                 
         }
+
+        cust_debug_str("Send heartbeat %d", Heartbeat);
+        
         if(Heartbeat > 0){
           Heartbeat --;
         }else{

@@ -72,6 +72,17 @@ extern "C"
 #define LIGHT_MAINMODE      0x00
 #define LIGHT_HELPMODE      0x01
 
+
+//Global State
+#define GLOBAL_STATE_CONFIG                   0x00
+#define GLOBAL_STATE_ONLINE                   0x01
+#define GLOBAL_STATE_PERMIT_JOINING   0x02
+#define GLOBAL_STATE_OFFLINE                 0x03
+#define GLOBAL_STATE_SENSOR_ALARM      0x04
+
+
+
+
 /*********************************************************************
  * MACROS
  */
