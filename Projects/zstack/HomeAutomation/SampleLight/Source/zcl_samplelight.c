@@ -1548,7 +1548,7 @@ static uint8 zclSampleLight_ProcessInReadRspCmd(zclIncomingMsg_t *pInMsg)
     uint8  period;
 
     uint16 soil_ph;
-    uint64 soil_temp;
+    uint16 soil_temp;
     uint16 soil_humi;
 
     readRspCmd = (zclReadRspCmd_t *)pInMsg->attrCmd;
@@ -1587,7 +1587,7 @@ static uint8 zclSampleLight_ProcessInReadRspCmd(zclIncomingMsg_t *pInMsg)
                     break;
 
                 case ATTRID_BASIC_SMARTGARDEN_TEMP:
-                    soil_temp = *((uint64*)readRspCmd->attrList[0].data);
+                    soil_temp = *((uint16*)readRspCmd->attrList[0].data);
                     cust_debug_str("the soil temp %d", soil_temp);
                     break;
                 case ATTRID_BASIC_SMARTGARDEN_HUMIDITY:
