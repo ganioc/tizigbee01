@@ -127,7 +127,7 @@ uint8  zclSampleLight_LevelDefaultMoveRate = 0;   // as fast as possible
 uint16    zclSmartGarden_HeartbeatPeriod = 20; // in seconds
 uint16  zclSmartGarden_AlarmStatus = 0;
 uint16  zclSmartGarden_PHValue = 10;
-uint16 zclSmartGarden_Temp = 15;
+uint64 zclSmartGarden_Temp = 15;
 uint16 zclSmartGarden_Humidity = 10;
 uint16  zclSmartGarden_LightIntensity = 0;
 uint16   zclSmartGarden_IrrigateOnOff = 0;
@@ -774,7 +774,7 @@ CONST zclAttrRec_t zclSampleLight_Attrs[] =
         {
             // Attribute record
             ATTRID_BASIC_SMARTGARDEN_TEMP,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
-            ZCL_DATATYPE_UINT16,                 // Data Type - found in zcl.h
+            ZCL_DATATYPE_UINT64,                 // Data Type - found in zcl.h
             ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
             (void *)&zclSmartGarden_Temp  // Pointer to attribute variable
         }
