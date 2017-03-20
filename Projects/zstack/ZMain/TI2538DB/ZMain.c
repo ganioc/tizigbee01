@@ -68,6 +68,7 @@
 #include "hal_led.h"
 extern byte peripheral_TaskID;
 extern uint16 zclSmartGarden_HeartbeatPeriod;
+extern uint8 blink_sign;
 /******************************************************************************
  * LOCAL DEFINITIONS
  */
@@ -99,7 +100,6 @@ static void zmain_lcd_init( void );
  *
  * @return  Don't care
  */
-uint8 val = 0;
 
 int main( void )
 {
@@ -155,7 +155,7 @@ int main( void )
   /* Display the device info on the LCD */
 #ifdef LCD_SUPPORTED
   zmain_dev_info();
-  zmain_lcd_init();
+  //zmain_lcd_init();
 #endif
 
 #ifdef WDT_IN_PM1
@@ -164,18 +164,17 @@ int main( void )
 #endif
   
   cust_bspLedInit();
-  CUST_LED1_OFF();
-  CUST_LED2_OFF();
-  //HalLedSet(HAL_LED_1, HAL_LED_MODE_ON);
   cust_uart_init();
   cust_uart_open();  
-  //relay_turn_on();
-  //beep_init();
+
+  beep_init();
   
+  HalLedSet (HAL_LED_2, HAL_LED_MODE_ON);
   cust_uart_print("\nWait setting mode ...\n");
-  
+  //blink_sign = 1;
+ // HalLedBlink(HAL_LED_1, 2, 50, 1000);
   wait_setting_mode(1);
-  
+  HalLedSet (HAL_LED_1, HAL_LED_MODE_OFF);
   periph_uart_init();
   periph_uart_open();
   
@@ -185,7 +184,7 @@ int main( void )
   
    //
 #ifndef ZDO_COORDINATOR
-  //osal_start_timerEx(peripheral_TaskID, PERIPH_SENSOR_UPDATE, 10 * 1000); //start read sensor after 5min
+  osal_start_timerEx(peripheral_TaskID, PERIPH_SENSOR_UPDATE, 5 * 1000); //start read sensor after 5min
   cust_timer_init(zclSmartGarden_HeartbeatPeriod);
 #endif
   
