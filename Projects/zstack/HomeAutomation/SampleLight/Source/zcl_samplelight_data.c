@@ -129,12 +129,22 @@ uint16  zclSmartGarden_AlarmStatus = 0;
 uint16  zclSmartGarden_PHValue = 10;
 uint16 zclSmartGarden_Temp = 15;
 uint16 zclSmartGarden_Humidity = 10;
-uint16  zclSmartGarden_LightIntensity = 0;
+
+#ifdef TYPE2
+uint32  zclSmartGarden_LightIntensity = 0;
+uint16  zclSmartGarden_TempIntensity = 0;
+uint16  zclSmartGarden_HumiIntensity = 0;
+#endif
+
 uint16   zclSmartGarden_IrrigateOnOff = 0;
 uint16   zclSmartGarden_State = 0;
 uint16  zclSmartGarden_ChipId = 0;
-uint16  zclSmartGarden_DeviceType = DEVICE_TYPE_BASIC;
-
+#ifdef TYPE1
+uint16  zclSmartGarden_DeviceType = DEVICE_TYPE_1;
+#endif
+#ifdef TYPE2
+uint16  zclSmartGarden_DeviceType = DEVICE_TYPE_2;
+#endif
 
 #if ZCL_DISCOVER
 CONST zclCommandRec_t zclSampleLight_Cmds[] =
@@ -789,16 +799,40 @@ CONST zclAttrRec_t zclSampleLight_Attrs[] =
             (void *)&zclSmartGarden_Humidity  // Pointer to attribute variable
         }
     },
+    
+#ifdef TYPE2
     {
         ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
         {
             // Attribute record
             ATTRID_BASIC_SMARTGARDEN_LIGHT_INTENSITY,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
-            ZCL_DATATYPE_UINT16,                 // Data Type - found in zcl.h
+            ZCL_DATATYPE_UINT32,                 // Data Type - found in zcl.h
             ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
             (void *)&zclSmartGarden_LightIntensity // Pointer to attribute variable
         }
     },
+    {
+      ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
+        {
+            // Attribute record
+            ATTRID_BASIC_SMARTGARDEN_TEMP_INTENSITY,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
+            ZCL_DATATYPE_UINT16,                 // Data Type - found in zcl.h
+            ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
+            (void *)&zclSmartGarden_TempIntensity // Pointer to attribute variable
+        }
+    },
+    {
+      ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
+        {
+            // Attribute record
+            ATTRID_BASIC_SMARTGARDEN_HUMI_INTENSITY,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
+            ZCL_DATATYPE_UINT16,                 // Data Type - found in zcl.h
+            ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
+            (void *)&zclSmartGarden_HumiIntensity // Pointer to attribute variable
+        }
+    },
+#endif
+    
     {
         ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
         {

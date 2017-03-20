@@ -426,8 +426,6 @@ void zclSampleLight_Init(byte task_id)
     zgpTranslationTable_RegisterEP(&zclSampleLight_SimpleDesc);
 #endif
 
-
-    zclSmartGarden_DeviceType = DEVICE_TYPE_BASIC;
     zclSmartGarden_IrrigateOnOff = 0; //0 is OFF , 1 is ON
     zclSmartGarden_State = GLOBAL_STATE_OFFLINE;
 
@@ -1055,12 +1053,12 @@ static void zclSampleLight_OnOffCB(uint8 cmd)
     else if(cmd == COMMAND_TURN_ON_IRRIGATE){
         debug_str("turn on irrigate");
         zclSmartGarden_IrrigateOnOff = 1;
-        relay_turn_on();
+        relay0_turn_on();
     }
     else if(cmd == COMMAND_TURN_OFF_IRRIGATE){
         debug_str("turn off irrigate");
         zclSmartGarden_IrrigateOnOff = 0;
-        relay_turn_off();
+        relay0_turn_off();
     }
     else if(cmd == COMMAND_TURN_ON_PERMIT_JOINING){
         debug_str("turn on permitjoining");

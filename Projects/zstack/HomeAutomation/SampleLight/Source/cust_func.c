@@ -23,13 +23,22 @@
 #include "sensorph.h"
 #include "peripheral.h"
 #include "hal_led.h"
+#include "air_sensor.h"
 
 extern uint8 Hal_TaskID;
 extern uint8 peripheral_TaskID;
 
+
 char buffer[BUFFER_LENGTH];
 uint8 recvbuff[BUFFER_LENGTH];
 int index;
+
+extern uint16   zclSmartGarden_AlarmStatus;
+uint16 zclSmartGarden_Status = 0;
+uint8 phcounter = 0, tempcounter = 0, humicounter = 0;
+
+uint8 light_counter = 0;
+uint8 temp_humi_counter = 0;
 
 static int counterDefaultKey = 0;
 
@@ -56,11 +65,17 @@ void cust_uart_init(void){
 
   /* 
    */ 
-  
+#ifdef NEW_BOARD
+  IOCPinConfigPeriphOutput(GPIO_C_BASE, GPIO_PIN_5, IOC_MUX_OUT_SEL_UART0_TXD);
+  IOCPinConfigPeriphInput(GPIO_C_BASE, GPIO_PIN_4, IOC_UARTRXD_UART0);
+  GPIOPinTypeUARTInput(GPIO_C_BASE, GPIO_PIN_4);
+  GPIOPinTypeUARTOutput(GPIO_C_BASE, GPIO_PIN_5);  
+#else
   IOCPinConfigPeriphOutput(GPIO_A_BASE, GPIO_PIN_3, IOC_MUX_OUT_SEL_UART0_TXD);
   IOCPinConfigPeriphInput(GPIO_A_BASE, GPIO_PIN_2, IOC_UARTRXD_UART0);
   GPIOPinTypeUARTInput(GPIO_A_BASE, GPIO_PIN_2);
   GPIOPinTypeUARTOutput(GPIO_A_BASE, GPIO_PIN_3);  
+#endif
   
 }
 
@@ -115,7 +130,7 @@ void cust_uart_write(uint8 *pbuf, uint8 len)
   uint8 i = 0;
   for(; i<len; i++){
     cust_uart_putChar(*pbuf++);
-    cust_delay_1ms();
+    cust_delay_2ms();
   }
 }
 
@@ -130,11 +145,6 @@ uint8 cust_uart_rxlen()
   return len;
 }
 
-void cust_uart_read(uint8 *pbuf, uint8 len)
-{
-  osal_memcpy(pbuf, recvbuff, len);
-  osal_memset(recvbuff, 0, len);
-}
 void cust_debug_str( char *fmt, ...){
   va_list ap;//初始化指向可变参数列表的指针         
   char string[256];         
@@ -335,16 +345,18 @@ void cust_HalKeyPoll(void){
   
 }
 
-uint8 update_sensor()
+uint8 update_soil_sensor()
 {
   uint16 retStatue = 0;
   uint8 statue = 0;
-
+  
+  sensor_switch(port1);
   retStatue = Read_Soil_Ph();
-  if(retStatue == -1){
+  if(retStatue == 0xFA){
     statue |= 0x1;
   }
-
+  
+  sensor_switch(port0);
   retStatue = Read_Soil_Temp();
   if(retStatue == 0xFF){
     statue |= 0x2;
@@ -358,6 +370,97 @@ uint8 update_sensor()
   return statue;
 }
 
+uint8 update_air_sensor()
+{
+  uint16 retStatue = 0;
+  uint8 statue = 0;
+  
+ // sensor_switch(port0);
+  retStatue = Read_Air_Light();
+  if(retStatue == 0xFE){
+    statue |= 0x1;
+  }
+
+ retStatue = Read_Air_Temp_Humi();
+  if(retStatue == 0xFF){
+    statue |= 0x2;
+  }
+  
+  return statue;
+}
+
+void soil_alarm_sign()
+{
+    uint8 statue = update_soil_sensor();
+    
+    if(statue & 0x1){
+      phcounter ++;
+    }
+    if(statue & 0x2){
+      tempcounter ++;
+    }
+    
+    if(statue & 0x4){
+      humicounter ++;
+    }
+    if(phcounter >= 3){
+       phcounter = 0;
+       zclSmartGarden_Status |= ZCLSMARTGARDEN_STATE_ERR_PH;
+    }
+    if(tempcounter >= 3 || humicounter >= 3){
+      if(tempcounter >= 3){
+        tempcounter = 0;
+      }
+      
+      if(humicounter >= 3){
+        humicounter = 0;
+      }
+     
+      zclSmartGarden_Status |= ZCLSMARTGARDEN_STATE_ERR_TEMP_HUMI;
+    }
+    if(zclSmartGarden_Status){
+      HalLedBlink(HAL_LED_1, 10, 66, 3000);
+     // beep_on();
+      zclSmartGarden_AlarmStatus = zclSmartGarden_Status;
+      zclSmartGarden_Status = 0;
+    }else{
+      beep_off();
+      zclSmartGarden_AlarmStatus = 0;
+    }
+}
+
+void air_alarm_sign()
+{
+    uint8 statue = update_air_sensor();
+    
+    if(statue & 0x1){
+      light_counter ++;
+    }
+    if(statue & 0x2){
+      temp_humi_counter ++;
+    }
+    
+    if(light_counter >= 3 || temp_humi_counter >= 3){
+      if(light_counter >= 3){
+       light_counter = 0;
+      }
+      if(temp_humi_counter >= 3){
+        temp_humi_counter = 0;
+      }
+       zclSmartGarden_Status |= ZCLSMARTGARDEN_STATE_ENV_SENSOR_ERR;
+    }
+     
+    if(zclSmartGarden_Status){
+      HalLedBlink(HAL_LED_1, 10, 66, 3000);
+      //beep_on();
+      zclSmartGarden_AlarmStatus = zclSmartGarden_Status;
+      zclSmartGarden_Status = 0;
+    }else{
+      beep_off();
+      zclSmartGarden_AlarmStatus = 0;
+    }
+}
+
 void relay_init()
 {
   GPIOPinTypeGPIOOutput(ELEC_TOGGLE, ELEC_TOGGLE_PIN6|ELEC_TOGGLE_PIN7);
@@ -366,16 +469,26 @@ void relay_init()
   GPIOPinWrite(ELEC_TOGGLE, ELEC_TOGGLE_PIN7, ELEC_RELAY1_OFF);
 }
 
-void relay_turn_on()
+void relay0_turn_on()
 {
   GPIOPinWrite(ELEC_TOGGLE, ELEC_TOGGLE_PIN6, ELEC_RELAY0_ON);
   //GPIOPinWrite(ELEC_TOGGLE, ELEC_TOGGLE_PIN7, ELEC_RELAY1_ON);
 }
 
-void relay_turn_off()
+void relay1_turn_on()
+{
+  GPIOPinWrite(ELEC_TOGGLE, ELEC_TOGGLE_PIN7, ELEC_RELAY1_ON);
+}
+
+void relay0_turn_off()
 {
    GPIOPinWrite(ELEC_TOGGLE, ELEC_TOGGLE_PIN6, ELEC_RELAY0_OFF);
    //GPIOPinWrite(ELEC_TOGGLE, ELEC_TOGGLE_PIN7, ELEC_RELAY1_OFF);
+}
+
+void relay1_turn_off()
+{
+   GPIOPinWrite(ELEC_TOGGLE, ELEC_TOGGLE_PIN7, ELEC_RELAY1_OFF);
 }
 
 void beep_init()
@@ -395,3 +508,53 @@ void beep_off()
    GPIOPinWrite(BEEP_BASE, BEEP_PIN, BEEP_OFF);
 }
 
+                      
+void sensor_switch_init()
+{
+  GPIOPinTypeGPIOOutput(RS485_SWITCH_BASE, S0_PIN | S1_PIN);
+  IOCPadConfigSet(RS485_SWITCH_BASE, S0_PIN | S1_PIN, IOC_OVERRIDE_OE);
+}
+
+void open_port0()
+{
+   GPIOPinWrite(RS485_SWITCH_BASE, S1_PIN, ~S1_PIN);
+   GPIOPinWrite(RS485_SWITCH_BASE, S1_PIN, ~S0_PIN);
+}
+
+void open_port1()
+{
+   GPIOPinWrite(RS485_SWITCH_BASE, S1_PIN, ~S1_PIN);
+   GPIOPinWrite(RS485_SWITCH_BASE, S1_PIN, S0_PIN);
+}
+
+void open_port2()
+{
+   GPIOPinWrite(RS485_SWITCH_BASE, S1_PIN, S1_PIN);
+   GPIOPinWrite(RS485_SWITCH_BASE, S1_PIN, ~S0_PIN);
+}
+
+void open_port3()
+{
+   GPIOPinWrite(RS485_SWITCH_BASE, S1_PIN, S1_PIN);
+   GPIOPinWrite(RS485_SWITCH_BASE, S1_PIN, S0_PIN);
+}
+
+void sensor_switch(uint8 port)
+{
+  switch(port){
+  case port0:
+    open_port0();
+    break;
+  case port1:
+    open_port1();
+    break;
+  case port2:
+    open_port2();
+    break;
+  case port3:
+    open_port3();
+    break;
+  default:
+    debug_str("unknown port");
+  }
+}

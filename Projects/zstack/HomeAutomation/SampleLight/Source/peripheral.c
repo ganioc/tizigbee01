@@ -32,11 +32,8 @@
 byte peripheral_TaskID;
 uint8 peripheralSeqNum=0;
 
-uint16 zclSmartGarden_Status = 0;
-uint8 phcounter = 0, tempcounter = 0, humicounter = 0;
 extern uint8 zclSmartGarden_HeartbeatPeriod;
 extern uint16 zclSmartGarden_ChipId;
-extern uint16   zclSmartGarden_AlarmStatus;
 extern uint8 Heartbeat;
 extern uint16    zclSmartGarden_DeviceType;
 extern uint16 zclSmartGarden_IrrigateOnOff;
@@ -124,42 +121,15 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
 
     }
     if(events & PERIPH_SENSOR_UPDATE){
- 
-      uint8 statue = update_sensor();
       
-      if(statue & 0x1){
-        phcounter ++;
-      }
-      if(statue & 0x2){
-        tempcounter ++;
-      }
+#ifdef TYPE1
+      soil_alarm_sign();
+#endif
+
+#ifdef TYPE2
+      air_alarm_sign();
+#endif
       
-      if(statue & 0x4){
-        humicounter ++;
-      }
-      if(phcounter >= 3){
-         phcounter = 0;
-         zclSmartGarden_Status |= ZCLSMARTGARDEN_STATE_ERR_PH;
-      }
-      if(tempcounter >= 3 || humicounter >= 3){
-        if(tempcounter >= 3){
-          tempcounter = 0;
-        }
-        
-        if(humicounter >= 3){
-          humicounter = 0;
-        }
-       
-        zclSmartGarden_Status |= ZCLSMARTGARDEN_STATE_ERR_TEMP_HUMI;
-      }
-      if(zclSmartGarden_Status){
-        HalLedBlink(HAL_LED_1, 10, 66, 3000);
-        beep_on();
-        zclSmartGarden_AlarmStatus = zclSmartGarden_Status;
-        zclSmartGarden_Status = 0;
-      }else{
-        zclSmartGarden_AlarmStatus = 0;
-      }
       osal_start_timerEx(peripheral_TaskID, PERIPH_SENSOR_UPDATE, 5 * 1000);
     }
     
@@ -210,7 +180,7 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
         }else{
           //close the tune;
           zclSmartGarden_IrrigateOnOff = 0;
-          relay_turn_off();
+          relay0_turn_off();
         }
         
     }

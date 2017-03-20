@@ -9,7 +9,7 @@
 #define CMDLEN                  8
 #define ERR_STAT                0xFC
 #define TEMP_ERR                0xFF
-#define SENSOR_SUCC             0x01          
+#define SENSOR_SUCC             0x0          
 
 typedef enum func_num{
   TEMP = 3,

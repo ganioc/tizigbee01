@@ -47,6 +47,8 @@
 #define ATTRID_BASIC_SMARTGARDEN_CHIPID_ACK                   0x4010
 #define ATTRID_BASIC_SMARTGARDEN_ATTR_LIST                      0x4011
 #define ATTRID_BASIC_SMARTGARDEN_DEVICE_TYPE                  0x4012
+#define ATTRID_BASIC_SMARTGARDEN_TEMP_INTENSITY                0x4013
+#define ATTRID_BASIC_SMARTGARDEN_HUMI_INTENSITY                 0x4014 
 
 //Coordinator cmdID
 #define FUNC_TURN_OFF_LIGHT_CMD                        0x0
@@ -75,6 +77,8 @@
     
 #define ZCLSMARTGARDEN_STATE_ERR_PH   0x02
 
+#define ZCLSMARTGARDEN_STATE_ENV_SENSOR_ERR  0x04
+
 // default key pb3
 #define KEY_DEFAULT_BASE         GPIO_B_BASE
 #define KEY_DEFAULT_PIN          GPIO_PIN_3      //!< PB3
@@ -96,6 +100,18 @@
 
 #define GPIO_PIN_ALL            0xFF
 
+typedef enum switch_port{
+  port0,
+  port1,
+  port2,
+  port3,
+}rs485_port;
+
+//S1,S0 sensor switch
+#define RS485_SWITCH_BASE       GPIO_C_BASE
+#define S0_PIN                  GPIO_PIN_6
+#define S1_PIN                  GPIO_PIN_7
+
 #define MAX_DEFAULT_KEY_COUNTER  30
 
 // Led
@@ -104,8 +120,8 @@
 #define LED_PIN2          GPIO_PIN_5  
 
 // device type
-#define DEVICE_TYPE_BASIC  0x1001
-#define DEVICE_TYPE_PRO      0x1002   //´øÆøÏóÕ¾
+#define DEVICE_TYPE_1           1
+#define DEVICE_TYPE_2           2 
 
 
 #define CUST_LED1_ON()    GPIOPinWrite(LED_BASE, LED_PIN1, LED_PIN1)
@@ -139,8 +155,6 @@ void cust_uart_write(uint8 *pbuf, uint8 len);
 
 uint8 cust_uart_rxlen(void);
 
-void cust_uart_read(uint8 *pbuf, uint8 len);
-
 // uart_print
 void cust_uart_print( char *str, ...);
 
@@ -159,18 +173,39 @@ void cust_HalKeyPoll(void);
 
 void cust_bspLedInit(void);
 
-uint8 update_sensor(void);
+uint8 update_soil_sensor(void);
+
+void soil_alarm_sign(void);
+
+uint8 update_air_sensor(void);
+
+void air_alarm_sign(void);
 
 void relay_init(void);
 
-void relay_turn_on(void);
+void relay0_turn_on(void);
 
-void relay_turn_off(void);
+void relay1_turn_on(void);
+
+void relay0_turn_off(void);
+
+void relay1_turn_off(void);
 #endif //CUST_FUNC_H
 
 void beep_init(void);
 
-void beep_on();
+void beep_on(void);
 
-void beep_off();
+void beep_off(void);
 
+void sensor_switch_init(void);
+
+void open_port0(void);
+
+void open_port1(void);
+
+void open_port2(void);
+
+void open_port3(void);
+
+void sensor_switch(uint8 port);
