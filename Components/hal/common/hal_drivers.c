@@ -216,7 +216,7 @@ uint16 Hal_ProcessEvent( uint8 task_id, uint16 events )
   if ( events & HAL_LED_BLINK_EVENT )
   {
 #if (defined (BLINK_LEDS)) && (HAL_LED == TRUE)
-    HalLedUpdate();
+   HalLedUpdate();
 #endif /* BLINK_LEDS && HAL_LED */
     return events ^ HAL_LED_BLINK_EVENT;
   }
