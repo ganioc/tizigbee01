@@ -774,7 +774,7 @@ CONST zclAttrRec_t zclSampleLight_Attrs[] =
         {
             // Attribute record
             ATTRID_BASIC_SMARTGARDEN_TEMP,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
-            ZCL_DATATYPE_UINT64,                 // Data Type - found in zcl.h
+            ZCL_DATATYPE_UINT16,                 // Data Type - found in zcl.h
             ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
             (void *)&zclSmartGarden_Temp  // Pointer to attribute variable
         }

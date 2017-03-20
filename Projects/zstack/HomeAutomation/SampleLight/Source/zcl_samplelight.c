@@ -1050,18 +1050,22 @@ static void zclSampleLight_OnOffCB(uint8 cmd)
     }
     else if( cmd == COMMAND_IDENTIFYING){
         debug_str("Identifying");
+        HalLedBlink (HAL_LED_2, 3, 50, 2000);
     }
     else if(cmd == COMMAND_TURN_ON_IRRIGATE){
         debug_str("turn on irrigate");
         zclSmartGarden_IrrigateOnOff = 1;
+        relay_turn_on();
     }
     else if(cmd == COMMAND_TURN_OFF_IRRIGATE){
         debug_str("turn off irrigate");
         zclSmartGarden_IrrigateOnOff = 0;
+        relay_turn_off();
     }
     else if(cmd == COMMAND_TURN_ON_PERMIT_JOINING){
         debug_str("turn on permitjoining");
-        
+        NLME_PermitJoiningRequest(0xF0);
+        HalLedBlink (HAL_LED_2, 120, 50, 2000);
     }
 
 #if ZCL_LEVEL_CTRL
@@ -1930,10 +1934,6 @@ static void zclSampleLight_ProcessInReportCmd(zclIncomingMsg_t *pInMsg)
 
         case ATTRID_BASIC_SMARTGARDEN_CHIPID_ACK :
             cust_debug_str("Heartbeat ACK");
-
-            //TimerEnable(GPTIMER1_BASE, GPTIMER_BOTH);
-            relay_turn_on();
-
             Heartbeat = 3;
             break;
         case ATTRID_BASIC_SMARTGARDEN_ALARM_STATUS:

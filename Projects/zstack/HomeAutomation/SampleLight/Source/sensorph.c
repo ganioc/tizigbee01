@@ -6,7 +6,7 @@
 #include "sensorph.h"
 
 extern uint16  zclSmartGarden_PHValue;
-
+extern uint8 recvbuff[BUFFER_LENGTH];
 uint16 PHReadCount = 0;
 uint8 read_addr_cmd[READ_CMD_LEN] = {0x00, 0x20};
 uint8 write_addr_cmd[WRITE_CMD_LEN] = {0x00, 0x10, SLAVE_ADDR_PH};
@@ -74,7 +74,6 @@ uint8 read_dev_addr()
 
 uint16 Read_Soil_Ph()
 {
-  double ph = 0.0;
   uint16 crc = Cal_Crc16( read_data_cmd, READ_DATA_LEN - 2);
   read_data_cmd[READ_DATA_LEN - 2] = crc & 0xFF;
   read_data_cmd[READ_DATA_LEN - 1] = (crc >> 8) & 0xFF;
@@ -82,25 +81,20 @@ uint16 Read_Soil_Ph()
   cust_uart_write(read_data_cmd, READ_DATA_LEN);
   uint8 recvlen = 0;
   while(!(recvlen = cust_uart_rxlen())){
-    PHReadCount ++;
+      PHReadCount ++;
       if(PHReadCount >= 0xFF){
         PHReadCount = 0;
         return ERR_CODE;
       }
   }
-  uint8 *recvdata = NULL;
-  recvdata = osal_mem_alloc(recvlen);
-  if(recvdata){
-    cust_uart_read(recvdata, recvlen);
-    if(!Cal_Crc16( recvdata, recvlen)){
-      ph = (double)(((recvdata[3] * 256 + recvdata[4]) - 4) / (16.0 / 14.0) / 100);
-      zclSmartGarden_PHValue = ph;
+    if(!Cal_Crc16( recvbuff, recvlen)){
+      
+      zclSmartGarden_PHValue ^= zclSmartGarden_PHValue;
+      zclSmartGarden_PHValue |= recvbuff[3];
+      zclSmartGarden_PHValue <<= 8;
+      zclSmartGarden_PHValue |= recvbuff[4];
       return SENSOR_SUCC;
     }else{
-      osal_mem_free(recvdata);
       return ERR_CODE;
     }
-  }else{
-    return ERR_CODE;
-  }
 }

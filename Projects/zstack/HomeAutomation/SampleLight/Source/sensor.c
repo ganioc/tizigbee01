@@ -9,6 +9,7 @@
 
 extern uint16 zclSmartGarden_Temp;
 extern uint16 zclSmartGarden_Humidity;
+extern uint8 recvbuff[BUFFER_LENGTH];
 
 uint16 MaxReadCount = 0;
 
@@ -39,32 +40,22 @@ uint16 Read_Soil_Temp()
     }
     cust_delay_2ms();
   }
-  uint8 *recvdata = NULL;
-  recvdata = osal_mem_alloc(recvlen);
-  uint16 realtemp = 0;
-  if(recvdata != NULL){
-    cust_uart_read(recvdata, recvlen);
-    if(!Cal_Crc16(recvdata, recvlen)){
+
+    if(!Cal_Crc16(recvbuff, recvlen)){
       uint8 len = 0;
-      len = recvdata[2];
+      len = recvbuff[2];
       if(len > 0){
-          if(!(recvdata[3] & (1 << 7))){
-            realtemp = (recvdata[3] * 256 + recvdata[4]) / 100; 
-          }
-          else{
-            realtemp = ((recvdata[3] * 256 + recvdata[4]) - 0xFFFF -1) / 100;
-          }
-          zclSmartGarden_Temp = realtemp;
+          zclSmartGarden_Temp ^= zclSmartGarden_Temp;
+          zclSmartGarden_Temp |= recvbuff[3];
+          zclSmartGarden_Temp <<= 8;
+          zclSmartGarden_Temp |= recvbuff[4];
+          return SENSOR_SUCC;
+      }else{
+        return TEMP_ERR;
       }
-    osal_mem_free(recvdata);
-    return SENSOR_SUCC;
     }else{
-      osal_mem_free(recvdata);
       return TEMP_ERR;
     }
-  }else{
-    return TEMP_ERR;
-  }
 }
 
 
@@ -81,30 +72,24 @@ uint16 Read_Soil_Humi()
      MaxReadCount ++;
     if(MaxReadCount >= 0xFF){
       MaxReadCount = 0;
-      return TEMP_ERR;
-    }
-  }
-  uint8 *recvdata = NULL;
-  recvdata = osal_mem_alloc(recvlen);
-  uint16 realhumi;
-  if(recvdata != NULL){
-    cust_uart_read(recvdata, recvlen);
-    if(!Cal_Crc16(recvdata, recvlen)){
-      uint8 len = 0;
-      len = recvdata[2];
-      if(len > 0){
-            realhumi = (recvdata[3] * 256 + recvdata[4]) / 100; //(%)
-      }
-    osal_mem_free(recvdata);
-    zclSmartGarden_Humidity = realhumi;
-    return SENSOR_SUCC;
-    }else{
-      osal_mem_free(recvdata);
       return ERR_STAT;
     }
-  }else{
-    return ERR_STAT;
   }
+    if(!Cal_Crc16(recvbuff, recvlen)){
+      uint8 len = 0;
+      len = recvbuff[2];
+      if(len > 0){
+        zclSmartGarden_Humidity ^= zclSmartGarden_Humidity;
+        zclSmartGarden_Humidity |= recvbuff[3];
+        zclSmartGarden_Humidity <<= 8;
+        zclSmartGarden_Humidity |= recvbuff[4];
+        return SENSOR_SUCC;
+      }else{
+        return ERR_STAT;
+      }
+    }else{
+      return ERR_STAT;
+    }
 }
 
 uint8 Chk_Device()

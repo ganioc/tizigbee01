@@ -24,6 +24,7 @@
 #include "sensorph.h"
 #include "zGlobals.h"
 #include "gptimer.h"
+#include "hal_led.h"
 
 /*********************************************************************
  * GLOBAL VARIABLES
@@ -32,13 +33,13 @@ byte peripheral_TaskID;
 uint8 peripheralSeqNum=0;
 
 uint16 zclSmartGarden_Status = 0;
-
 uint8 phcounter = 0, tempcounter = 0, humicounter = 0;
 extern uint8 zclSmartGarden_HeartbeatPeriod;
 extern uint16 zclSmartGarden_ChipId;
 extern uint16   zclSmartGarden_AlarmStatus;
 extern uint8 Heartbeat;
 extern uint16    zclSmartGarden_DeviceType;
+extern uint16 zclSmartGarden_IrrigateOnOff;
 
 afAddrType_t zclSample_CoorAddr;
 
@@ -118,7 +119,7 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
     if(events & PERIPH_RESET_EVENT)
     {
         //SystemReset();
-        //sys_recover();
+        sys_recover();
         peripheral_reset();
 
     }
@@ -139,7 +140,6 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
       if(phcounter >= 3){
          phcounter = 0;
          zclSmartGarden_Status |= ZCLSMARTGARDEN_STATE_ERR_PH;
-         //report alarm;
       }
       if(tempcounter >= 3 || humicounter >= 3){
         if(tempcounter >= 3){
@@ -149,35 +149,16 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
         if(humicounter >= 3){
           humicounter = 0;
         }
+       
         zclSmartGarden_Status |= ZCLSMARTGARDEN_STATE_ERR_TEMP_HUMI;
-        //report alarm;
       }
       if(zclSmartGarden_Status){
-        
+        HalLedBlink(HAL_LED_1, 10, 66, 3000);
+        beep_on();
         zclSmartGarden_AlarmStatus = zclSmartGarden_Status;
         zclSmartGarden_Status = 0;
-        zclReportCmd_t  *reportCmd;
-        reportCmd = osal_mem_alloc(sizeof(zclReportCmd_t ) + sizeof(zclReport_t));
-        
-        if(reportCmd){
-          
-            reportCmd->numAttr = 1;
-            reportCmd->attrList[0].attrID = ATTRID_BASIC_SMARTGARDEN_ALARM_STATUS;
-            reportCmd->attrList[0].dataType = ZCL_DATATYPE_UINT16;
-            reportCmd->attrList[0].attrData = (uint8 *)&zclSmartGarden_AlarmStatus;
-
-            zcl_SendReportCmd(
-                8, 
-                &zclSample_CoorAddr, 
-                ZCL_CLUSTER_ID_GEN_BASIC, 
-                reportCmd, 
-                ZCL_FRAME_CLIENT_SERVER_DIR,
-                0, 
-                peripheralSeqNum++);
-            
-            osal_mem_free(reportCmd);
-                
-        }
+      }else{
+        zclSmartGarden_AlarmStatus = 0;
       }
       osal_start_timerEx(peripheral_TaskID, PERIPH_SENSOR_UPDATE, 5 * 1000);
     }
@@ -227,8 +208,9 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
         if(Heartbeat > 0){
           Heartbeat --;
         }else{
-          relay_turn_off();
           //close the tune;
+          zclSmartGarden_IrrigateOnOff = 0;
+          relay_turn_off();
         }
         
     }
