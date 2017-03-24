@@ -130,15 +130,15 @@ uint16  zclSmartGarden_PHValue = 10;
 uint16 zclSmartGarden_Temp = 15;
 uint16 zclSmartGarden_Humidity = 10;
 
-#ifdef TYPE2
+
 uint32  zclSmartGarden_LightIntensity = 0;
 uint16  zclSmartGarden_TempIntensity = 0;
 uint16  zclSmartGarden_HumiIntensity = 0;
-#endif
+
 
 uint16   zclSmartGarden_IrrigateOnOff = 0;
 uint16   zclSmartGarden_State = 0;
-uint16  zclSmartGarden_ChipId = 0;
+uint64  zclSmartGarden_ChipId = 0;
 #ifdef TYPE1
 uint16  zclSmartGarden_DeviceType = DEVICE_TYPE_1;
 #endif
@@ -858,7 +858,7 @@ CONST zclAttrRec_t zclSampleLight_Attrs[] =
         {
             // Attribute record
             ATTRID_BASIC_SMARTGARDEN_CHIPID,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
-            ZCL_DATATYPE_UINT16,                 // Data Type - found in zcl.h
+            ZCL_DATATYPE_UINT64,                 // Data Type - found in zcl.h
             ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
             (void *)&zclSmartGarden_ChipId  // Pointer to attribute variable
         }

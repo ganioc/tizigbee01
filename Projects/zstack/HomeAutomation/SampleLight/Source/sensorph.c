@@ -4,97 +4,47 @@
 #include "hal_types.h"
 #include "sensor.h"
 #include "sensorph.h"
+#include "gptimer.h"
+#include "hal_led.h"
 
-extern uint16  zclSmartGarden_PHValue;
 extern uint8 recvbuff[BUFFER_LENGTH];
-uint16 PHReadCount = 0;
+extern uint16  zclSmartGarden_PHValue;
+uint16 PHReadCount;
+uint8 PHrecvlen = 0;
+extern uint8 ph_counter;
+
 uint8 read_addr_cmd[READ_CMD_LEN] = {0x00, 0x20};
 uint8 write_addr_cmd[WRITE_CMD_LEN] = {0x00, 0x10, SLAVE_ADDR_PH};
-uint8 read_data_cmd[READ_DATA_LEN] = {SLAVE_ADDR_PH, 0x03, 0x00, 0x00, 0x00, 0x01};
+uint8 read_data_cmd[READ_DATA_LEN] = {SLAVE_ADDR_PH, 0x03, 0x00, 0x00, 0x00, 0x01, 0x84, 0x39};
 
-bool write_dev_addr()
+void Read_Soil_Ph()
 {
-  uint8 addr;
-  uint16 crc = Cal_Crc16( write_addr_cmd, WRITE_CMD_LEN - 2);
-  write_addr_cmd[WRITE_CMD_LEN - 2] = crc & 0xFF;
-  write_addr_cmd[WRITE_CMD_LEN - 1] = (crc >> 8) & 0xFF;
-  
-  cust_uart_write(write_addr_cmd, WRITE_CMD_LEN);
-  uint8 recvlen = 0;
-  while(!(recvlen = cust_uart_rxlen()));
-  uint8 *recvdata = NULL;
-  recvdata = (uint8 *)osal_mem_alloc(recvlen);
-  if(recvdata){
-    cust_uart_read(recvdata, recvlen);
-    if(!Cal_Crc16(recvdata, recvlen)){
-      osal_mem_free(recvdata);
-      cust_delay_2ms();
-      addr = read_dev_addr();
-      if(addr == SLAVE_ADDR_PH){
-        return TRUE;
-      }
-      else{
-        osal_mem_free(recvdata);
-        return FALSE;
-      }
-    }else{
-      osal_mem_free(recvdata);
-      return FALSE;
-    }
-  }   
-   return  FALSE;
-}
-
-uint8 read_dev_addr()
-{
-  uint8 addr;
-  uint16 crc = Cal_Crc16( read_addr_cmd, 2);
-  read_addr_cmd[READ_CMD_LEN - 2] = crc & 0xFF;
-  read_addr_cmd[READ_CMD_LEN - 1] = (crc >> 8) & 0xFF;
-  
-  cust_uart_write(read_addr_cmd, READ_CMD_LEN);
-  uint8 recvlen = 0;
-  while(!(recvlen = cust_uart_rxlen()));
-  uint8 *recvdata = NULL;
-  recvdata = (uint8 *)osal_mem_alloc(recvlen);
-  if(recvdata){
-    cust_uart_read(recvdata, recvlen);
-    if(!Cal_Crc16(recvdata, recvlen)){
-      addr = recvdata[2];
-      osal_mem_free(recvdata);
-      return addr;
-    }else{
-      osal_mem_free(recvdata);
-      return ERR_CODE;
-    }
-  }   
-   return  ERR_CODE;
-  
-}
-
-uint16 Read_Soil_Ph()
-{
-  uint16 crc = Cal_Crc16( read_data_cmd, READ_DATA_LEN - 2);
-  read_data_cmd[READ_DATA_LEN - 2] = crc & 0xFF;
-  read_data_cmd[READ_DATA_LEN - 1] = (crc >> 8) & 0xFF;
-  
+  PHrecvlen = 0;
+  PHReadCount = 0;
   cust_uart_write(read_data_cmd, READ_DATA_LEN);
-  uint8 recvlen = 0;
-  while(!(recvlen = cust_uart_rxlen())){
-      PHReadCount ++;
-      if(PHReadCount >= 0xFF){
-        PHReadCount = 0;
-        return ERR_CODE;
-      }
-  }
-    if(!Cal_Crc16( recvbuff, recvlen)){
+  uint8 PHrecvlen = 0;
+  if(!(PHrecvlen = cust_uart_rxlen())){
+    TimerIntEnable(GPTIMER2_BASE, GPTIMER_TIMA_TIMEOUT);
+    TimerEnable(GPTIMER2_BASE, GPTIMER_A);
+  }else{
+     if(!Cal_Crc16( recvbuff, PHrecvlen)){
       
       zclSmartGarden_PHValue ^= zclSmartGarden_PHValue;
       zclSmartGarden_PHValue |= recvbuff[3];
       zclSmartGarden_PHValue <<= 8;
       zclSmartGarden_PHValue |= recvbuff[4];
-      return SENSOR_SUCC;
-    }else{
-      return ERR_CODE;
-    }
+      
+     }else{
+      ph_counter ++;
+      if(ph_counter >= 3){
+        ph_counter = 0;
+        HalLedBlink(HAL_LED_1, 10, 66, 3000);
+      }else{
+        beep_off();
+      }
+     }
+  }
+
+ // UARTCharPut(CUST_UART0_PORT, 0xFF);
+ // cust_uart0_write(recvbuff, recvlen);
 }

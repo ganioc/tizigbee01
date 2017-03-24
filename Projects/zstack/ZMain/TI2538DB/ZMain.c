@@ -66,6 +66,8 @@
 #include "peripheral.h"
 #include "cust_timer.h"
 #include "hal_led.h"
+#include "sensor_timer.h"
+
 extern byte peripheral_TaskID;
 extern uint16 zclSmartGarden_HeartbeatPeriod;
 extern uint8 blink_sign;
@@ -104,7 +106,7 @@ static void zmain_lcd_init( void );
 int main( void )
 {
   //turn off the relay
-  //relay_init();
+  relay_init();
   
   
   // Turn off interrupts
@@ -169,6 +171,10 @@ int main( void )
 
   beep_init();
   
+  sensor_timer2_init();
+  sensor_switch_init();
+  
+  
   HalLedSet (HAL_LED_2, HAL_LED_MODE_ON);
   cust_uart_print("\nWait setting mode ...\n");
   //blink_sign = 1;
@@ -184,7 +190,14 @@ int main( void )
   
    //
 #ifndef ZDO_COORDINATOR
-  osal_start_timerEx(peripheral_TaskID, PERIPH_SENSOR_UPDATE, 5 * 1000); //start read sensor after 5min
+  
+#ifdef TYPE1
+  osal_start_timerEx(peripheral_TaskID, PERIPH_PH_SENSOR_UPDATE, 1 * 1000); //start read sensor after 5min
+  osal_start_timerEx(peripheral_TaskID, PERIPH_TEMPHUMI_SENSOR_UPDATE, 2 * 1000);
+#else
+  osal_start_timerEx(peripheral_TaskID, PERIPH_AIR_SENSOR_UPDATE, 1 * 1000);
+#endif
+  
   cust_timer_init(zclSmartGarden_HeartbeatPeriod);
 #endif
   

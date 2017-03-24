@@ -120,17 +120,26 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
         peripheral_reset();
 
     }
-    if(events & PERIPH_SENSOR_UPDATE){
+    if(events & PERIPH_PH_SENSOR_UPDATE){
       
-#ifdef TYPE1
-      soil_alarm_sign();
-#endif
-
-#ifdef TYPE2
-      air_alarm_sign();
-#endif
+      update_soil_ph_sensor();
       
-      osal_start_timerEx(peripheral_TaskID, PERIPH_SENSOR_UPDATE, 5 * 1000);
+      osal_start_timerEx(peripheral_TaskID, PERIPH_PH_SENSOR_UPDATE, 1 * 1000);
+     // return events & PERIPH_SENSOR_UPDATE;
+    }
+    
+    if(events & PERIPH_TEMPHUMI_SENSOR_UPDATE){
+      
+      update_soil_temphumi_sensor();
+      osal_start_timerEx(peripheral_TaskID, PERIPH_TEMPHUMI_SENSOR_UPDATE, 1 * 1000);
+      
+    }
+    
+    if(events & PERIPH_AIR_SENSOR_UPDATE){
+      
+        update_air_sensor();
+        osal_start_timerEx(peripheral_TaskID, PERIPH_AIR_SENSOR_UPDATE, 1 * 1000);
+  
     }
     
     if(events & PERIPH_HEARTBEAT_REPORT){
@@ -151,7 +160,7 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
 
             reportCmd->numAttr = 2;
             reportCmd->attrList[0].attrID = ATTRID_BASIC_SMARTGARDEN_CHIPID;
-            reportCmd->attrList[0].dataType = ZCL_DATATYPE_UINT16;
+            reportCmd->attrList[0].dataType = ZCL_DATATYPE_UINT64;
             reportCmd->attrList[0].attrData = (uint8 *)&zclSmartGarden_ChipId;
             
             reportCmd->attrList[1].attrID = ATTRID_BASIC_SMARTGARDEN_DEVICE_TYPE;

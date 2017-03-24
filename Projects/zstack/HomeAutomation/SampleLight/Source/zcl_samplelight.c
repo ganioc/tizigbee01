@@ -1048,7 +1048,7 @@ static void zclSampleLight_OnOffCB(uint8 cmd)
     }
     else if( cmd == COMMAND_IDENTIFYING){
         debug_str("Identifying");
-        HalLedBlink (HAL_LED_2, 3, 50, 2000);
+        HalLedBlink (HAL_LED_3, 3, 50, 2000);
     }
     else if(cmd == COMMAND_TURN_ON_IRRIGATE){
         debug_str("turn on irrigate");

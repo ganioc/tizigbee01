@@ -8,7 +8,7 @@ extern uint16  zclSmartGarden_TempIntensity;
 extern uint16  zclSmartGarden_HumiIntensity;
 
 uint8 AIRReadCount = 0;
-uint8 read_temp_humi_cmd[AIR_CMDLEN] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xC4, 0x0B};
+uint8 read_air_temphumi_cmd[AIR_CMDLEN] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xC4, 0x0B};
 uint8 read_air_light_cmd[AIR_CMDLEN] = {0x01, 0x03, 0x00, 0x07, 0x00, 0x02, 0x75, 0xCA};
 
 const uint8 chCRCHTalbe[] =                                 // CRC 高位字节值表
@@ -62,12 +62,10 @@ const uint8 chCRCLTalbe[] =                                 // CRC 低位字节值表
 0x41, 0x81, 0x80, 0x40
 };
 
-uint16 Read_Air_Temp_Humi()
+uint16 Read_Air_TempHumi()
 { 
    // debug_str(pbuf);
-  cust_delay_2ms();
-  cust_uart_write(read_temp_humi_cmd, AIR_CMDLEN);
-  cust_delay_2ms();
+  cust_uart_write(read_air_temphumi_cmd, AIR_CMDLEN);
   uint8 recvlen = 0;
   while(!(recvlen = cust_uart_rxlen())){
     AIRReadCount ++;
@@ -77,7 +75,7 @@ uint16 Read_Air_Temp_Humi()
     }
     cust_delay_2ms();
   }
-
+  
     if(!CAL_CRC16_TAB(recvbuff, recvlen)){
       uint8 len = 0;
       len = recvbuff[2];
@@ -101,6 +99,7 @@ uint16 Read_Air_Temp_Humi()
     }
 }
 
+
 uint16 Read_Air_Light()
 {
   cust_uart_write(read_air_light_cmd, AIR_CMDLEN);
@@ -114,6 +113,9 @@ uint16 Read_Air_Light()
     }
     cust_delay_2ms();
   }
+ 
+   UARTCharPut(CUST_UART0_PORT, 1);
+  cust_uart0_write(recvbuff, recvlen);
 
     if(!CAL_CRC16_TAB(recvbuff, recvlen)){
       uint8 len = 0;
@@ -135,6 +137,7 @@ uint16 Read_Air_Light()
       return LIGHT_ERR;
     }
 }
+
 
 uint16 CAL_CRC16_TAB(uint8* pchMsg, uint16 wDataLen)
 {

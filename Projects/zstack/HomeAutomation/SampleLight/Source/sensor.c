@@ -13,83 +13,58 @@ extern uint8 recvbuff[BUFFER_LENGTH];
 
 uint16 MaxReadCount = 0;
 
-uint8 read_temp_cmd[CMDLEN] = {SLAVE_ADDR, TEMP, TEMPRATURE_ADDR >> 8,
-                                          TEMPRATURE_ADDR & 0xFF, 0x00, 0x01,0,0};
-
-uint8 read_humi_cmd[CMDLEN] = {SLAVE_ADDR, HUMI, VWC_ADDR >> 8,
-                                          VWC_ADDR & 0xFF, 0x00, 0x01};
+uint8 read_soil_temp_humi_cmd[CMDLEN] = {SLAVE_ADDR, 0x03, 0x00,
+                                          0x00, 0x00, 0x02,0xC4,0x0B};
 
 uint8 check_cmd[CMDLEN] = {SLAVE_ADDR, SLAVE, (SLAVE_REG >> 8)&0xff, 
                                           SLAVE_REG & 0xFF, 0x00, 0x01,0x0,0x0};
-uint16 Read_Soil_Temp()
+uint16 Read_Soil_Temp_Humi()
 { 
-  uint16 crc = Cal_Crc16(read_temp_cmd, CMDLEN - 2);
-  read_temp_cmd[CMDLEN - 2] = crc &0xFF;
-  read_temp_cmd[CMDLEN - 1] = (crc >> 8) & 0xFF;
-
    // debug_str(pbuf);
-
-  cust_uart_write(read_temp_cmd, CMDLEN);
+  MaxReadCount = 0;
+  cust_uart_write(read_soil_temp_humi_cmd, CMDLEN);
   
   uint8 recvlen = 0;
+  
+ 
   while(!(recvlen = cust_uart_rxlen())){
     MaxReadCount ++;
     if(MaxReadCount >= 0xFF){
       MaxReadCount = 0;
-      return TEMP_ERR;
+      return TEMP_HUMI_ERR;
     }
     cust_delay_2ms();
   }
-
-    if(!Cal_Crc16(recvbuff, recvlen)){
-      uint8 len = 0;
-      len = recvbuff[2];
-      if(len > 0){
-          zclSmartGarden_Temp ^= zclSmartGarden_Temp;
-          zclSmartGarden_Temp |= recvbuff[3];
-          zclSmartGarden_Temp <<= 8;
-          zclSmartGarden_Temp |= recvbuff[4];
-          return SENSOR_SUCC;
-      }else{
-        return TEMP_ERR;
-      }
-    }else{
-      return TEMP_ERR;
-    }
-}
-
-
-uint16 Read_Soil_Humi()
-{
-
-  uint16 crc = Cal_Crc16(read_humi_cmd, CMDLEN - 2);
-  read_humi_cmd[CMDLEN - 2] = crc &0xFF;
-  read_humi_cmd[CMDLEN - 1] = (crc >> 8) & 0xFF;
-  
-  cust_uart_write(read_humi_cmd, CMDLEN);
-  uint8 recvlen = 0;
-  while(!(recvlen = cust_uart_rxlen())){
-     MaxReadCount ++;
-    if(MaxReadCount >= 0xFF){
-      MaxReadCount = 0;
-      return ERR_STAT;
-    }
+ // UARTCharPut(CUST_UART0_PORT, 0xFF);
+  //cust_uart0_write(recvbuff, recvlen);
+  /*
+  cust_debug_str("recvlen :%d", recvlen );
+  uint8 i = 0;
+  for(;i<recvlen; i++){
+    cust_debug_str("recvdata[%d]:%d", i, recvbuff[i]);
   }
-    if(!Cal_Crc16(recvbuff, recvlen)){
-      uint8 len = 0;
-      len = recvbuff[2];
-      if(len > 0){
-        zclSmartGarden_Humidity ^= zclSmartGarden_Humidity;
-        zclSmartGarden_Humidity |= recvbuff[3];
-        zclSmartGarden_Humidity <<= 8;
-        zclSmartGarden_Humidity |= recvbuff[4];
-        return SENSOR_SUCC;
-      }else{
-        return ERR_STAT;
-      }
+  */
+  if(!Cal_Crc16(recvbuff, recvlen)){
+    uint8 len = 0;
+    len = recvbuff[2];
+    if(len > 0){
+      zclSmartGarden_Temp ^= zclSmartGarden_Temp;
+      zclSmartGarden_Temp |= recvbuff[3];
+      zclSmartGarden_Temp <<= 8;
+      zclSmartGarden_Temp |= recvbuff[4];
+
+      zclSmartGarden_Humidity ^= zclSmartGarden_Humidity;
+      zclSmartGarden_Humidity |= recvbuff[5];
+      zclSmartGarden_Humidity <<= 8;
+      zclSmartGarden_Humidity |= recvbuff[6];
+      return SENSOR_SUCC;
     }else{
-      return ERR_STAT;
+      return TEMP_HUMI_ERR;
     }
+  }else{
+    return TEMP_HUMI_ERR;
+  }
+  
 }
 
 uint8 Chk_Device()

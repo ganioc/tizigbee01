@@ -16,6 +16,7 @@
 **/
 
 #define CUST_UART_PORT         UART0_BASE
+#define CUST_UART0_PORT        UART1_BASE
 #define CUST_UART_BAUDRATE     38400
 
 #define PERIPH_UART_BUADRATE   9600
@@ -89,8 +90,8 @@
 
 #define ELEC_RELAY0_ON           GPIO_PIN_6
 #define ELEC_RELAY1_ON           GPIO_PIN_7
-#define ELEC_RELAY0_OFF          (GPIOPinRead(GPIO_A_BASE, GPIO_PIN_ALL) & (~GPIO_PIN_6)) 
-#define ELEC_RELAY1_OFF          (GPIOPinRead(GPIO_A_BASE, GPIO_PIN_ALL) & (~GPIO_PIN_7))      
+#define ELEC_RELAY0_OFF          ~GPIO_PIN_6
+#define ELEC_RELAY1_OFF          ~GPIO_PIN_7    
 
 //default beep
 #define BEEP_BASE               GPIO_C_BASE
@@ -153,6 +154,8 @@ void cust_uart_putChar(char ch);
 
 void cust_uart_write(uint8 *pbuf, uint8 len);
 
+void cust_uart0_write(uint8 *pbuf, uint8 len);
+
 uint8 cust_uart_rxlen(void);
 
 // uart_print
@@ -173,14 +176,20 @@ void cust_HalKeyPoll(void);
 
 void cust_bspLedInit(void);
 
-uint8 update_soil_sensor(void);
 
-void soil_alarm_sign(void);
 
-uint8 update_air_sensor(void);
+void update_soil_ph_sensor(void);
 
-void air_alarm_sign(void);
+void update_soil_temphumi_sensor(void);
 
+//void soil_alarm_sign(void);
+
+void update_air_sensor(void);
+
+//void air_alarm_sign(void);
+
+
+//relay define
 void relay_init(void);
 
 void relay0_turn_on(void);
@@ -192,12 +201,15 @@ void relay0_turn_off(void);
 void relay1_turn_off(void);
 #endif //CUST_FUNC_H
 
+
+//beep define
 void beep_init(void);
 
 void beep_on(void);
 
 void beep_off(void);
 
+//rs485 switch
 void sensor_switch_init(void);
 
 void open_port0(void);

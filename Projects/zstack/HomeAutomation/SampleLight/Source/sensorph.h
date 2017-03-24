@@ -8,8 +8,5 @@
 #define WRITE_CMD_LEN           5
 #define READ_DATA_LEN           8
 
-uint8 read_dev_addr(void);
+void Read_Soil_Ph(void);
 
-bool write_dev_addr(void);
-
-uint16 Read_Soil_Ph(void);

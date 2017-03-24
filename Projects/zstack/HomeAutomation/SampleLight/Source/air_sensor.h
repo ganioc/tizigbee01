@@ -8,7 +8,7 @@
 #define TEMP_HUMI_ERR   0xFF
 #define LIGHT_ERR       0xFE
 
-uint16 Read_Air_Temp_Humi(void);
+uint16 Read_Air_TempHumi(void);
 
 uint16 Read_Air_Light(void);
 
