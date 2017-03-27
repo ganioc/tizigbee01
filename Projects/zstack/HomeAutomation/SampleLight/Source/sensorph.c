@@ -22,7 +22,7 @@ void Read_Soil_Ph()
   PHrecvlen = 0;
   PHReadCount = 0;
   cust_uart_write(read_data_cmd, READ_DATA_LEN);
-  uint8 PHrecvlen = 0;
+ 
   if(!(PHrecvlen = cust_uart_rxlen())){
     TimerIntEnable(GPTIMER2_BASE, GPTIMER_TIMA_TIMEOUT);
     TimerEnable(GPTIMER2_BASE, GPTIMER_A);

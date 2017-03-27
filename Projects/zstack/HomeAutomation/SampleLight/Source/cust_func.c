@@ -86,6 +86,8 @@ void cust_uart_open(void){
   
   UARTIntDisable(CUST_UART_PORT, (UART_INT_RX | UART_INT_TX | UART_INT_CTS | UART_INT_RT ));
   
+  //UARTIntEnable(CUST_UART_PORT, UART_INT_TX | UART_INT_RX);
+ 
   UARTEnable(CUST_UART_PORT);
 }
   
@@ -106,6 +108,17 @@ void periph_uart_open(void){
   
   UARTIntDisable(CUST_UART_PORT, (UART_INT_RX | UART_INT_TX | UART_INT_CTS | UART_INT_RT ));
   
+  /*
+  UARTFIFOLevelSet(CUST_UART_PORT, UART_FIFO_TX1_8, UART_FIFO_RX7_8);
+  UARTFIFOEnable(CUST_UART_PORT);
+  
+  UARTIntClear(CUST_UART_PORT, UART_INT_RX | UART_INT_RT);
+  UARTIntRegister(CUST_UART_PORT, Read_Air_Sensor);
+
+#ifdef TYPE2
+  UARTIntEnable(CUST_UART_PORT, UART_INT_RX | UART_INT_RT);
+#endif
+  */
   UARTEnable(CUST_UART_PORT);
 }
 
@@ -128,8 +141,7 @@ void cust_uart_write(uint8 *pbuf, uint8 len)
 {
   uint8 i = 0;
   for(; i<len; i++){
-    cust_uart_putChar(*pbuf++);
-    //cust_delay_2ms();
+    cust_uart_putChar(pbuf[i]);
   }
 }
 
@@ -339,17 +351,6 @@ void cust_HalKeyPoll(void){
 
     osal_start_timerEx( peripheral_TaskID , PERIPH_RESET_EVENT , 2000);
 		
-    /*
-    if ((osal_nv_write(3, 0, 1, &value)) == ZSUCCESS)
-    {
-       // 
-       CUST_LED2_ON();
-       // delay 1 second
-       
-       osal_start_timerEx( peripheral_TaskID , PERIPH_RESET_EVENT , 1000);
-    }
-    */
-    
   }
   
 }
@@ -389,116 +390,62 @@ void update_soil_ph_sensor()
   Read_Soil_Ph();
 }
 
-void update_air_sensor()
-{
+void update_air_light()
+{ 
   uint16 Statue = 0;
   
   sensor_switch(port2);
-  Statue = Read_Air_TempHumi();
-  if(Statue == 0xFF){
-    
-    air_counter ++;
-    
-  }else{
-    
-    air_counter = 0;
-    zclSmartGarden_AlarmStatus = 0;
-  }
-  
-  cust_delay_10ms();
   Statue = Read_Air_Light();
+  
   if(Statue == 0xFE){
     air_counter ++;
-    
   }else{
     air_counter = 0;
     zclSmartGarden_AlarmStatus = 0;
   }
   
   if(air_counter >= 3){
-   
-      air_counter = 0;
-      zclSmartGarden_AlarmStatus = ZCLSMARTGARDEN_STATE_ENV_SENSOR_ERR;
-      
+    air_counter = 0;
+    zclSmartGarden_AlarmStatus = ZCLSMARTGARDEN_STATE_ENV_SENSOR_ERR;
+    
+    HalLedBlink(HAL_LED_1, 10, 66, 3000);
+     // beep_on();
+  }else{
+    beep_off();
   }
   
-  if(zclSmartGarden_AlarmStatus){
-    
-      HalLedBlink(HAL_LED_1, 10, 66, 3000);
-      //beep_on();
-      
-    }else{
-      
-      beep_off();
-      
-    }
-}
-/*
-void soil_alarm_sign()
-{ 
-    if(statue & 0x1){
-      ph_counter ++;
-    }else{
-      ph_counter = 0; 
-    }
-    if(statue & 0x2){
-      temphumi_counter ++;
-    }else{
-      temphumi_counter = 0;
-    }
-    
-    if(ph_counter >= 3){
-       ph_counter = 0;
-       zclSmartGarden_Status |= ZCLSMARTGARDEN_STATE_ERR_PH;
-    }
-    if(temphumi_counter >= 3){
-     temphumi_counter = 0;
-      zclSmartGarden_Status |= ZCLSMARTGARDEN_STATE_ERR_TEMP_HUMI;
-    }
-    if(zclSmartGarden_Status){
-      HalLedBlink(HAL_LED_1, 10, 66, 3000);
-     // beep_on();
-      zclSmartGarden_AlarmStatus = zclSmartGarden_Status;
-      zclSmartGarden_Status = 0;
-    }else{
-      beep_off();
-      zclSmartGarden_AlarmStatus = 0;
-    }
 }
 
-void air_alarm_sign()
+void update_air_temphumi()
 {
-    uint8 statue = update_air_sensor();
+  uint16 Statue = 0;
+  
+  sensor_switch(port2);
+  Statue = Read_Air_TempHumi();
+  
+  if(Statue == 0xFF){
+    air_counter ++;
+  }else{
+    air_counter = 0;
+    zclSmartGarden_AlarmStatus = 0;
+  }
+  
+  if(air_counter >= 3){
+    air_counter = 0;
+    zclSmartGarden_AlarmStatus = ZCLSMARTGARDEN_STATE_ENV_SENSOR_ERR;
     
-    if(statue & 0x1){
-      light_counter ++;
-    }
-    if(statue & 0x2){
-      temp_humi_counter ++;
-    }
-    
-    if(light_counter >= 3 || temp_humi_counter >= 3){
-      if(light_counter >= 3){
-       light_counter = 0;
-      }
-      if(temp_humi_counter >= 3){
-        temp_humi_counter = 0;
-      }
-       zclSmartGarden_Status |= ZCLSMARTGARDEN_STATE_ENV_SENSOR_ERR;
-    }
-     
-    if(zclSmartGarden_Status){
-      HalLedBlink(HAL_LED_1, 10, 66, 3000);
-      //beep_on();
-      zclSmartGarden_AlarmStatus = zclSmartGarden_Status;
-      zclSmartGarden_Status = 0;
-    }else{
-      beep_off();
-      zclSmartGarden_AlarmStatus = 0;
-    }
+     HalLedBlink(HAL_LED_1, 10, 66, 3000);
+     // beep_on();
+  }else{
+    beep_off();
+  }
+ 
 }
-*/
 
+uint32 read_relay0_state()
+{
+  return GPIOPinRead(ELEC_TOGGLE, ELEC_TOGGLE_PIN6);
+}
 
 void relay_init()
 {

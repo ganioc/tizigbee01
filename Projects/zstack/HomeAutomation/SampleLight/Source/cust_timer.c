@@ -11,7 +11,8 @@
 
 extern byte peripheral_TaskID;
 extern uint16 zclSmartGarden_HeartbeatPeriod;
-extern uint16 zclSmartGarden_ChipId;
+extern uint64 zclSmartGarden_ChipId;
+extern uint32 chipidH, chipidL;
 
 void cust_timer_init(uint8 period)
 {
@@ -33,26 +34,15 @@ void cust_timer_init(uint8 period)
   zclSmartGarden_ChipId <<= 32;
   zclSmartGarden_ChipId |= (*((uint32*)( 0x0028002c )));
   */
+  zclSmartGarden_ChipId = chipidH;
+  zclSmartGarden_ChipId <<= 32;
+  zclSmartGarden_ChipId += chipidL;
 }
 
 void Timer1_Handler()
 {
   if(GPTIMER_TIMA_TIMEOUT == TimerIntStatus(GPTIMER1_BASE, TRUE)){
-  //zclSmartGarden_ChipId += (*((uint32*)( 0x00280028 ))) << 32;
-  //zclSmartGarden_ChipId += (*((uint32*)( 0x00280028 )));
-  //zclSmartGarden_ChipId <<= 32;
-  //cust_debug_str("chipID : %d", zclSmartGarden_ChipId>>32);
-  //zclSmartGarden_ChipId += (*(uint32*)(((uint32*)(0x00280028) + 4)));
- // zclSmartGarden_ChipId += (*(uint32*)((0x00280028 + 4)));
-  //cust_debug_str("chipID : %d", zclSmartGarden_ChipId);
-  
-  //chipID =  (*((uint32*)0x00280028));
-
-  //cust_debug_str("chipID : %d", chipID);
-  
-  //chipID =  (*((uint32*)( 0x0028002c )));
-
-  //cust_debug_str("chipID : %d", chipID);
+ 
   TimerIntClear(GPTIMER1_BASE,  GPTIMER_TIMA_TIMEOUT);
   osal_set_event(peripheral_TaskID, PERIPH_HEARTBEAT_REPORT);
   }

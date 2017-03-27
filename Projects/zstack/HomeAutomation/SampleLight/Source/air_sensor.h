@@ -12,4 +12,8 @@ uint16 Read_Air_TempHumi(void);
 
 uint16 Read_Air_Light(void);
 
+void Read_Air_Data(void);
+
+void Read_Air_Sensor(void);
+
 uint16 CAL_CRC16_TAB(uint8* pchMsg, uint16 wDataLen);

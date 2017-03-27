@@ -1,14 +1,21 @@
 #include "hal_types.h"
 #include "cust_func.h"
 #include "air_sensor.h"
+#include "hal_led.h"
+#include "gptimer.h"
 
 extern uint8 recvbuff[BUFFER_LENGTH];
 extern uint32  zclSmartGarden_LightIntensity;
 extern uint16  zclSmartGarden_TempIntensity;
 extern uint16  zclSmartGarden_HumiIntensity;
+extern uint8 air_counter;
 
+extern uint8 AIRrecvlen;
 uint8 AIRReadCount = 0;
 uint8 read_air_temphumi_cmd[AIR_CMDLEN] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xC4, 0x0B};
+
+uint8 read_air_data_cmd[AIR_CMDLEN] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x09, 0x85, 0xCC};
+
 uint8 read_air_light_cmd[AIR_CMDLEN] = {0x01, 0x03, 0x00, 0x07, 0x00, 0x02, 0x75, 0xCA};
 
 const uint8 chCRCHTalbe[] =                                 // CRC 高位字节值表
@@ -67,6 +74,7 @@ uint16 Read_Air_TempHumi()
    // debug_str(pbuf);
   cust_uart_write(read_air_temphumi_cmd, AIR_CMDLEN);
   uint8 recvlen = 0;
+  
   while(!(recvlen = cust_uart_rxlen())){
     AIRReadCount ++;
     if(AIRReadCount >= 0xFF){
@@ -76,34 +84,29 @@ uint16 Read_Air_TempHumi()
     cust_delay_2ms();
   }
   
-    if(!CAL_CRC16_TAB(recvbuff, recvlen)){
-      uint8 len = 0;
-      len = recvbuff[2];
-      if(len > 0){
-          zclSmartGarden_HumiIntensity ^= zclSmartGarden_HumiIntensity;
-          zclSmartGarden_HumiIntensity |= recvbuff[3];
+   if(!CAL_CRC16_TAB(recvbuff, recvlen)){
+      
+          zclSmartGarden_HumiIntensity = 0;
+          zclSmartGarden_HumiIntensity += recvbuff[3];
           zclSmartGarden_HumiIntensity <<= 8;
-          zclSmartGarden_HumiIntensity |= recvbuff[4];
+          zclSmartGarden_HumiIntensity += recvbuff[4];
           
-          zclSmartGarden_TempIntensity ^= zclSmartGarden_TempIntensity;
-          zclSmartGarden_TempIntensity |= recvbuff[5];
+          zclSmartGarden_TempIntensity = 0;
+          zclSmartGarden_TempIntensity += recvbuff[5];
           zclSmartGarden_TempIntensity <<= 8;
-          zclSmartGarden_TempIntensity |= recvbuff[6];
-          
-          return AIR_SUCCESS;
+          zclSmartGarden_TempIntensity += recvbuff[6];
+         
+            return AIR_SUCCESS;
       }else{
         return TEMP_HUMI_ERR;
       }
-    }else{
-      return TEMP_HUMI_ERR;
-    }
 }
 
 
 uint16 Read_Air_Light()
 {
   cust_uart_write(read_air_light_cmd, AIR_CMDLEN);
-  cust_delay_2ms();
+  
   uint8 recvlen = 0;
   while(!(recvlen = cust_uart_rxlen())){
     AIRReadCount ++;
@@ -114,13 +117,11 @@ uint16 Read_Air_Light()
     cust_delay_2ms();
   }
  
-   UARTCharPut(CUST_UART0_PORT, 1);
-  cust_uart0_write(recvbuff, recvlen);
+  //UARTCharPut(CUST_UART0_PORT, 1);
+  //cust_uart0_write(recvbuff, recvlen);
 
     if(!CAL_CRC16_TAB(recvbuff, recvlen)){
-      uint8 len = 0;
-      len = recvbuff[2];
-      if(len > 0){
+     
           zclSmartGarden_LightIntensity ^= zclSmartGarden_LightIntensity;
           zclSmartGarden_LightIntensity |= recvbuff[3];
           zclSmartGarden_LightIntensity <<= 24;
@@ -129,13 +130,68 @@ uint16 Read_Air_Light()
           zclSmartGarden_LightIntensity |= recvbuff[5];
           zclSmartGarden_LightIntensity <<= 8;
           zclSmartGarden_LightIntensity |= recvbuff[6];
-          return AIR_SUCCESS;
+          
+          return AIR_SUCCESS;   
       }else{
         return LIGHT_ERR;
       }
-    }else{
-      return LIGHT_ERR;
+}
+
+void Read_Air_Sensor()
+{
+  uint8 recvlen = 0;
+  
+  if(UART_INT_RX == UARTIntStatus(CUST_UART_PORT, TRUE)){
+    
+  while(UARTCharsAvail(CUST_UART_PORT)){
+    recvbuff[recvlen] = UARTCharGetNonBlocking(CUST_UART_PORT);
+    recvlen++;
+  }
+      
+      if(!CAL_CRC16_TAB(recvbuff, recvlen)){
+         
+             zclSmartGarden_HumiIntensity = 0;
+              zclSmartGarden_HumiIntensity += recvbuff[3];
+              zclSmartGarden_HumiIntensity <<= 8;
+              zclSmartGarden_HumiIntensity += recvbuff[4];
+              
+              zclSmartGarden_TempIntensity = 0;
+              zclSmartGarden_TempIntensity += recvbuff[5];
+              zclSmartGarden_TempIntensity <<= 8;
+              zclSmartGarden_TempIntensity += recvbuff[6];
+              
+              zclSmartGarden_LightIntensity = 0;
+              zclSmartGarden_LightIntensity += recvbuff[17];
+              zclSmartGarden_LightIntensity <<= 24;
+              zclSmartGarden_LightIntensity += recvbuff[18];
+              zclSmartGarden_LightIntensity <<= 16;
+              zclSmartGarden_LightIntensity += recvbuff[19];
+              zclSmartGarden_LightIntensity <<= 8;
+              zclSmartGarden_LightIntensity += recvbuff[20];
+              
+              air_counter = 0;
+      }else{
+        if(air_counter >= 3){
+          air_counter = 0;
+          HalLedBlink(HAL_LED_1, 10, 66, 3000);
+          // beep_on();
+        }else{
+           beep_off();
+        }
+      }
     }
+  UARTIntClear(CUST_UART_PORT, UART_INT_RX | UART_INT_RT);
+}
+
+void Read_Air_Data()
+{ 
+   // debug_str(pbuf);
+ // UARTIntEnable(CUST_UART_PORT, UART_INT_RX);
+   AIRrecvlen = 0;
+   cust_uart_write(read_air_data_cmd, AIR_CMDLEN);
+   
+    TimerIntEnable(GPTIMER2_BASE, GPTIMER_TIMA_TIMEOUT);
+    TimerEnable(GPTIMER2_BASE, GPTIMER_A);
 }
 
 
@@ -151,5 +207,5 @@ uint16 CAL_CRC16_TAB(uint8* pchMsg, uint16 wDataLen)
                 chCRCLo = chCRCHi ^ chCRCHTalbe[wIndex];
                 chCRCHi = chCRCLTalbe[wIndex] ;
         }
-        return ((chCRCHi << 8) | chCRCLo) ;
+        return ((uint16)(chCRCHi << 8) + chCRCLo) ;
 }

@@ -184,13 +184,17 @@ void update_soil_temphumi_sensor(void);
 
 //void soil_alarm_sign(void);
 
-void update_air_sensor(void);
+void update_air_light(void);
+
+void update_air_temphumi(void);
 
 //void air_alarm_sign(void);
 
 
 //relay define
 void relay_init(void);
+
+uint32 read_relay0_state(void);
 
 void relay0_turn_on(void);
 

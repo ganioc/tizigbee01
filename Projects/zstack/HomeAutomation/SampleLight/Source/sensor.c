@@ -48,15 +48,15 @@ uint16 Read_Soil_Temp_Humi()
     uint8 len = 0;
     len = recvbuff[2];
     if(len > 0){
-      zclSmartGarden_Temp ^= zclSmartGarden_Temp;
-      zclSmartGarden_Temp |= recvbuff[3];
+      zclSmartGarden_Temp = 0;
+      zclSmartGarden_Temp += recvbuff[3];
       zclSmartGarden_Temp <<= 8;
-      zclSmartGarden_Temp |= recvbuff[4];
+      zclSmartGarden_Temp += recvbuff[4];
 
-      zclSmartGarden_Humidity ^= zclSmartGarden_Humidity;
-      zclSmartGarden_Humidity |= recvbuff[5];
+      zclSmartGarden_Humidity = 0;
+      zclSmartGarden_Humidity += recvbuff[5];
       zclSmartGarden_Humidity <<= 8;
-      zclSmartGarden_Humidity |= recvbuff[6];
+      zclSmartGarden_Humidity += recvbuff[6];
       return SENSOR_SUCC;
     }else{
       return TEMP_HUMI_ERR;

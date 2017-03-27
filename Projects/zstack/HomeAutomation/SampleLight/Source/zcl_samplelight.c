@@ -428,7 +428,8 @@ void zclSampleLight_Init(byte task_id)
 
     zclSmartGarden_IrrigateOnOff = 0; //0 is OFF , 1 is ON
     zclSmartGarden_State = GLOBAL_STATE_OFFLINE;
-
+    
+    ZMacSetTransmitPower(TX_PWR_PLUS_19);
     debug_str("End of _Init()");
 }
 
@@ -782,11 +783,11 @@ static void zclSampleLight_DisplayLight(void)
     // set the LED1 based on light (on or off)
     if(zclSampleLight_OnOff == LIGHT_ON)
     {
-        HalLedSet(HAL_LED_3, HAL_LED_MODE_ON);
+        //HalLedSet(HAL_LED_3, HAL_LED_MODE_ON);
     }
     else
     {
-        HalLedSet(HAL_LED_3, HAL_LED_MODE_OFF);
+       // HalLedSet(HAL_LED_3, HAL_LED_MODE_OFF);
     }
 
 #ifdef LCD_SUPPORTED
@@ -1048,17 +1049,21 @@ static void zclSampleLight_OnOffCB(uint8 cmd)
     }
     else if( cmd == COMMAND_IDENTIFYING){
         debug_str("Identifying");
-        HalLedBlink (HAL_LED_3, 3, 50, 2000);
+        HalLedBlink (HAL_LED_1, 3, 50, 2000);
     }
     else if(cmd == COMMAND_TURN_ON_IRRIGATE){
         debug_str("turn on irrigate");
         zclSmartGarden_IrrigateOnOff = 1;
-        relay0_turn_on();
+        if(!read_relay0_state()){
+          relay0_turn_on();
+        }  
     }
     else if(cmd == COMMAND_TURN_OFF_IRRIGATE){
         debug_str("turn off irrigate");
         zclSmartGarden_IrrigateOnOff = 0;
-        relay0_turn_off();
+         if(read_relay0_state()){
+          relay0_turn_off();
+        }  
     }
     else if(cmd == COMMAND_TURN_ON_PERMIT_JOINING){
         debug_str("turn on permitjoining");
@@ -1950,6 +1955,7 @@ static void zclSampleLight_ProcessInReportCmd(zclIncomingMsg_t *pInMsg)
         }
         default :
             debug_str("unknown report attr");
+          
     }
 
 

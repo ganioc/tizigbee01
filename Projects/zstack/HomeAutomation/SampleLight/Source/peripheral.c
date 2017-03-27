@@ -37,6 +37,7 @@ extern uint16 zclSmartGarden_ChipId;
 extern uint8 Heartbeat;
 extern uint16    zclSmartGarden_DeviceType;
 extern uint16 zclSmartGarden_IrrigateOnOff;
+extern uint8 air_counter;
 
 afAddrType_t zclSample_CoorAddr;
 
@@ -135,11 +136,15 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
       
     }
     
-    if(events & PERIPH_AIR_SENSOR_UPDATE){
-      
-        update_air_sensor();
-        osal_start_timerEx(peripheral_TaskID, PERIPH_AIR_SENSOR_UPDATE, 1 * 1000);
+    if(events & PERIPH_AIR_LIGHT_UPDATE){
+        update_air_light();
+        osal_start_timerEx(peripheral_TaskID, PERIPH_AIR_LIGHT_UPDATE, 1 * 1000);
   
+    }
+    
+    if(events & PERIPH_AIR_TEMPHUMI_UPDATE){
+        update_air_temphumi();
+        osal_start_timerEx(peripheral_TaskID, PERIPH_AIR_TEMPHUMI_UPDATE, 1 * 1000);
     }
     
     if(events & PERIPH_HEARTBEAT_REPORT){
