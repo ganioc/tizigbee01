@@ -67,7 +67,8 @@
 #include "cust_timer.h"
 #include "hal_led.h"
 #include "sensor_timer.h"
-
+uint32 chipidH;
+uint32 chipidL;
 extern byte peripheral_TaskID;
 extern uint16 zclSmartGarden_HeartbeatPeriod;
 extern uint8 blink_sign;
@@ -107,7 +108,8 @@ int main( void )
 {
   //turn off the relay
   relay_init();
-  
+  chipidH = *((uint32*)0x00280028);
+  chipidL = *((uint32*)0x0028002c);
   
   // Turn off interrupts
   osal_int_disable( INTS_ALL );
@@ -164,7 +166,7 @@ int main( void )
   /* If WDT is used, this is a good place to enable it. */
   WatchDogEnable( WDTIMX );
 #endif
-  
+  HalLedSet(HAL_LED_3, HAL_LED_MODE_ON);
   cust_bspLedInit();
   cust_uart_init();
   cust_uart_open();  
@@ -195,9 +197,9 @@ int main( void )
   osal_start_timerEx(peripheral_TaskID, PERIPH_PH_SENSOR_UPDATE, 1 * 1000); //start read sensor after 5min
   osal_start_timerEx(peripheral_TaskID, PERIPH_TEMPHUMI_SENSOR_UPDATE, 2 * 1000);
 #else
-  osal_start_timerEx(peripheral_TaskID, PERIPH_AIR_SENSOR_UPDATE, 1 * 1000);
+  osal_start_timerEx(peripheral_TaskID, PERIPH_AIR_TEMPHUMI_UPDATE, 1 * 1000);
+  osal_start_timerEx(peripheral_TaskID, PERIPH_AIR_LIGHT_UPDATE, 2 * 1000);
 #endif
-  
   cust_timer_init(zclSmartGarden_HeartbeatPeriod);
 #endif
   
