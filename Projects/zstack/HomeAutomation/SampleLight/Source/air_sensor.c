@@ -69,6 +69,36 @@ const uint8 chCRCLTalbe[] =                                 // CRC 低位字节值表
 0x41, 0x81, 0x80, 0x40
 };
 
+void send_air_temphumi(){
+    sensor_switch(port2);
+    cust_uart_write(read_air_temphumi_cmd, AIR_CMDLEN);
+}
+
+int read_air_temphumi_cb(uint8* buf, uint8 len){
+  if(len < 9)
+    return -1;
+  
+    if(len == 9 && !CAL_CRC16_TAB(buf, len)){
+      
+          zclSmartGarden_HumiIntensity = 0;
+          zclSmartGarden_HumiIntensity += buf[3];
+          zclSmartGarden_HumiIntensity <<= 8;
+          zclSmartGarden_HumiIntensity += buf[4];
+          
+          zclSmartGarden_TempIntensity = 0;
+          zclSmartGarden_TempIntensity += buf[5];
+          zclSmartGarden_TempIntensity <<= 8;
+          zclSmartGarden_TempIntensity += buf[6];
+         
+          cust_debug_str("air humi:%d",zclSmartGarden_HumiIntensity);
+          cust_debug_str("air temp:%d",zclSmartGarden_TempIntensity);
+            return 0;
+      }else{
+        return -2;
+      }
+}
+
+
 uint16 Read_Air_TempHumi()
 { 
    // debug_str(pbuf);
@@ -99,6 +129,35 @@ uint16 Read_Air_TempHumi()
             return AIR_SUCCESS;
       }else{
         return TEMP_HUMI_ERR;
+      }
+}
+
+void send_air_light(){
+    sensor_switch(port2);
+    //cust_uart_flush();
+    cust_uart_write(read_air_light_cmd, AIR_CMDLEN);
+}
+
+int read_air_light_cb(uint8* buf, uint8 len){
+
+  if(len < 9)
+    return -1;
+  
+    if(len == 9 && !CAL_CRC16_TAB(buf, len)){
+     
+          zclSmartGarden_LightIntensity ^= zclSmartGarden_LightIntensity;
+          zclSmartGarden_LightIntensity |= buf[3];
+          zclSmartGarden_LightIntensity <<= 24;
+          zclSmartGarden_LightIntensity |= buf[4];
+          zclSmartGarden_LightIntensity <<= 16;
+          zclSmartGarden_LightIntensity |= buf[5];
+          zclSmartGarden_LightIntensity <<= 8;
+          zclSmartGarden_LightIntensity |= buf[6];
+          
+           cust_debug_str("air light:%d",zclSmartGarden_LightIntensity);
+          return 0;   
+      }else{
+        return -2;
       }
 }
 

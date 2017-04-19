@@ -72,6 +72,8 @@ uint32 chipidL;
 extern byte peripheral_TaskID;
 extern uint16 zclSmartGarden_HeartbeatPeriod;
 extern uint8 blink_sign;
+extern uint16 zclSmartGarden_Sensor_Enable;
+
 /******************************************************************************
  * LOCAL DEFINITIONS
  */
@@ -107,9 +109,12 @@ static void zmain_lcd_init( void );
 int main( void )
 {
   //turn off the relay
+#ifndef ZDO_COORDINATOR
   relay_init();
+  cust_wdt_init();
   chipidH = *((uint32*)0x00280028);
   chipidL = *((uint32*)0x0028002c);
+#endif
   
   // Turn off interrupts
   osal_int_disable( INTS_ALL );
@@ -136,7 +141,6 @@ int main( void )
   // Initialize the Certicom certificate information.
   zmain_cert_init();
 #endif
-
   // Initialize basic NV items
   zgInit();
 
@@ -167,22 +171,33 @@ int main( void )
   WatchDogEnable( WDTIMX );
 #endif
   HalLedSet(HAL_LED_3, HAL_LED_MODE_ON);
+#ifdef NV_RESTORE
+  osal_nv_read(CUST_NV_SENSOR, 0, sizeof(zclSmartGarden_Sensor_Enable), &zclSmartGarden_Sensor_Enable);
+#endif
   cust_bspLedInit();
   cust_uart_init();
   cust_uart_open();  
-
+ 
+#ifndef ZDO_COORDINATOR
   beep_init();
-  
+  /*
+  HalLedSet(HAL_BEEP, HAL_LED_MODE_ON);
+  cust_delay_10ms(5);
+  HalLedSet(HAL_BEEP, HAL_LED_MODE_OFF);
+  */
   sensor_timer2_init();
   sensor_switch_init();
+#endif
   
   
   HalLedSet (HAL_LED_2, HAL_LED_MODE_ON);
+  /*
   cust_uart_print("\nWait setting mode ...\n");
   //blink_sign = 1;
  // HalLedBlink(HAL_LED_1, 2, 50, 1000);
   wait_setting_mode(1);
   HalLedSet (HAL_LED_1, HAL_LED_MODE_OFF);
+  */
   periph_uart_init();
   periph_uart_open();
   
@@ -192,15 +207,13 @@ int main( void )
   
    //
 #ifndef ZDO_COORDINATOR
+   
+  // Added by£Ù£á£î£ç
+   init_1shot_cust_timer();
+   start_1shot_cust_timer();
+
+   trigger_sensor_timer();
   
-#ifdef TYPE1
-  osal_start_timerEx(peripheral_TaskID, PERIPH_PH_SENSOR_UPDATE, 1 * 1000); //start read sensor after 5min
-  osal_start_timerEx(peripheral_TaskID, PERIPH_TEMPHUMI_SENSOR_UPDATE, 2 * 1000);
-#else
-  osal_start_timerEx(peripheral_TaskID, PERIPH_AIR_TEMPHUMI_UPDATE, 1 * 1000);
-  osal_start_timerEx(peripheral_TaskID, PERIPH_AIR_LIGHT_UPDATE, 2 * 1000);
-#endif
-  cust_timer_init(zclSmartGarden_HeartbeatPeriod);
 #endif
   
   osal_start_system(); // No Return from here

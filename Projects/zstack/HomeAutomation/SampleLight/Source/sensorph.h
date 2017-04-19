@@ -10,3 +10,7 @@
 
 void Read_Soil_Ph(void);
 
+
+void send_soil_ph(void);
+
+int read_soil_ph_cb(uint8* buf, uint8 len);

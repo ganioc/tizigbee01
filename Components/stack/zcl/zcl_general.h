@@ -360,6 +360,12 @@ extern "C"
 #define COMMAND_TURN_ON_IRRIGATE                         0x11
 #define COMMAND_TURN_OFF_IRRIGATE                         0x12
 #define COMMAND_TURN_ON_PERMIT_JOINING               0x13
+  
+//added by liu, port enable
+#define COMMAND_SOIL_SENSOR_ENABLE                            0x14
+#define COMMAND_SOIL_SENSOR_DISABLE                           0x15
+#define COMMAND_PH_SENSOR_ENABLE                            0x16
+#define COMMAND_PH_SENSOR_DISABLE                           0x17
 
 /*** Values of 'effect identifier' field of 'off with effect' command  ***/
 #define EFFECT_ID_DELAY_ALL_OFF                           0x00

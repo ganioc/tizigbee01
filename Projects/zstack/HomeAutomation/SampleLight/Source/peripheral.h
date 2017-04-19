@@ -18,6 +18,8 @@ extern "C"
 #define PERIPH_TEMPHUMI_SENSOR_UPDATE 16
 #define PERIPH_AIR_LIGHT_UPDATE 32
 #define PERIPH_AIR_TEMPHUMI_UPDATE 64
+#define PERIPH_TYPE_SENSOR_UPDATE  128  
+  
   
 #define PERIPH_TEST_CMD1    0
 #define PERIPH_TEST_CMD2    1 
@@ -26,7 +28,7 @@ extern "C"
 typedef struct
 {
   	osal_event_hdr_t hdr;
-  	uint8            srcEP;
+  	uint8          srcEP;
 	uint16         cmdID;
 	uint16         param1;
 	uint16         param2;

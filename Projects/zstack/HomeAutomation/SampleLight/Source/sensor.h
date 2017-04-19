@@ -20,3 +20,9 @@ uint8 Chk_Device(void);
 
 uint16 Cal_Crc16( uint8 *arr_buff, uint8 len);
 
+
+
+void send_soil_temp_humi();
+
+int read_soil_temp_humi_cb(uint8* buf, uint8 length);
+  

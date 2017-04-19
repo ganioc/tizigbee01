@@ -28,7 +28,8 @@
 extern uint8 Hal_TaskID;
 extern uint8 peripheral_TaskID;
 extern uint8 ph_counter;
-
+//test
+uint8 testbuf[120]; 
 char buffer[BUFFER_LENGTH];
 uint8 recvbuff[BUFFER_LENGTH];
 int index;
@@ -36,8 +37,6 @@ int index;
 extern uint16   zclSmartGarden_AlarmStatus;
 uint16 zclSmartGarden_Status = 0;
 uint8 temphumi_counter = 0;
-
-uint8 air_counter = 0;
 
 static int counterDefaultKey = 0;
 
@@ -122,6 +121,15 @@ void periph_uart_open(void){
   UARTEnable(CUST_UART_PORT);
 }
 
+void cust_uart_flush()
+{
+  uint8 testindex = 0;
+  while(UARTCharsAvail(CUST_UART_PORT)){
+     testbuf[testindex ++] = UARTCharGetNonBlocking(CUST_UART_PORT);
+     cust_debug_str("testbuf[%d]:%d", testindex - 1,testbuf[testindex - 1]);
+  }
+  cust_debug_str("recvlen:%d", testindex);  
+}
 
 void cust_uart_putChar(char ch){
   
@@ -291,8 +299,6 @@ int process_setting_cmd(char *buf){
   }
   else if(!strcmp(buf,"quit")){
     cust_uart_print("Quit\n");
-
-    
     return 0;
   }
   else{
@@ -355,93 +361,6 @@ void cust_HalKeyPoll(void){
   
 }
 
-void update_soil_temphumi_sensor()
-{
- uint16 Statue = 0;
-  
-  sensor_switch(port0);
-  Statue = Read_Soil_Temp_Humi();
-  if(Statue == 0xFF){
-      temphumi_counter ++;
-    }else{
-      temphumi_counter = 0;
-      zclSmartGarden_AlarmStatus &= (~ZCLSMARTGARDEN_STATE_ERR_TEMP_HUMI);
-    }
-  
-  if(temphumi_counter >= 3){
-     temphumi_counter = 0;
-      zclSmartGarden_AlarmStatus |= ZCLSMARTGARDEN_STATE_ERR_TEMP_HUMI;
-    }
-  
-   if(zclSmartGarden_AlarmStatus & ZCLSMARTGARDEN_STATE_ERR_TEMP_HUMI){
-     
-      HalLedBlink(HAL_LED_1, 10, 66, 3000);
-     // beep_on();
-    }else{
-      
-      beep_off();
-    }
-  
-}
-
-void update_soil_ph_sensor()
-{
-  sensor_switch(port1);
-  Read_Soil_Ph();
-}
-
-void update_air_light()
-{ 
-  uint16 Statue = 0;
-  
-  sensor_switch(port2);
-  Statue = Read_Air_Light();
-  
-  if(Statue == 0xFE){
-    air_counter ++;
-  }else{
-    air_counter = 0;
-    zclSmartGarden_AlarmStatus = 0;
-  }
-  
-  if(air_counter >= 3){
-    air_counter = 0;
-    zclSmartGarden_AlarmStatus = ZCLSMARTGARDEN_STATE_ENV_SENSOR_ERR;
-    
-    HalLedBlink(HAL_LED_1, 10, 66, 3000);
-     // beep_on();
-  }else{
-    beep_off();
-  }
-  
-}
-
-void update_air_temphumi()
-{
-  uint16 Statue = 0;
-  
-  sensor_switch(port2);
-  Statue = Read_Air_TempHumi();
-  
-  if(Statue == 0xFF){
-    air_counter ++;
-  }else{
-    air_counter = 0;
-    zclSmartGarden_AlarmStatus = 0;
-  }
-  
-  if(air_counter >= 3){
-    air_counter = 0;
-    zclSmartGarden_AlarmStatus = ZCLSMARTGARDEN_STATE_ENV_SENSOR_ERR;
-    
-     HalLedBlink(HAL_LED_1, 10, 66, 3000);
-     // beep_on();
-  }else{
-    beep_off();
-  }
- 
-}
-
 uint32 read_relay0_state()
 {
   return GPIOPinRead(ELEC_TOGGLE, ELEC_TOGGLE_PIN6);
@@ -484,6 +403,10 @@ void beep_init()
   GPIOPinWrite(BEEP_BASE, BEEP_PIN, BEEP_OFF);
 }
 
+uint32 read_beep_state()
+{
+  return GPIOPinRead(BEEP_BASE, BEEP_PIN);
+}
 void beep_on()
 {
   GPIOPinWrite(BEEP_BASE, BEEP_PIN, BEEP_ON);
@@ -545,4 +468,16 @@ void sensor_switch(uint8 port)
   default:
     debug_str("unknown port");
   }
+}
+
+
+void cust_wdt_init()
+{
+  GPIOPinTypeGPIOOutput(WDT_BASE, WDT_PIN);
+  IOCPadConfigSet(WDT_BASE, WDT_PIN, IOC_OVERRIDE_OE);
+}
+
+void cust_wdt_toggle()
+{
+  GPIOPinWrite(WDT_BASE, WDT_PIN, ~(GPIOPinRead(WDT_BASE, WDT_PIN)));
 }

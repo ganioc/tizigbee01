@@ -139,6 +139,10 @@ uint16  zclSmartGarden_HumiIntensity = 0;
 uint16   zclSmartGarden_IrrigateOnOff = 0;
 uint16   zclSmartGarden_State = 0;
 uint64   zclSmartGarden_ChipId = 0;
+
+uint16  zclSmartGarden_Sensor_Enable;
+
+uint16  zclSmartGarden_Air_Sensor;
 #ifdef TYPE1
 uint16  zclSmartGarden_DeviceType = DEVICE_TYPE_1;
 #endif
@@ -871,6 +875,26 @@ CONST zclAttrRec_t zclSampleLight_Attrs[] =
             ZCL_DATATYPE_UINT16,                 // Data Type - found in zcl.h
             ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
             NULL  // Pointer to attribute variable
+        }
+    },
+     {
+        ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
+        {
+            // Attribute record
+            ATTRID_BASIC_SMARTGARDEN_DEVICE_TYPE,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
+            ZCL_DATATYPE_UINT16,                 // Data Type - found in zcl.h
+            ACCESS_CONTROL_READ,                // Variable access control - found in zcl.h
+            (void *)&zclSmartGarden_DeviceType // Pointer to attribute variable
+        }
+    },
+    {
+        ZCL_CLUSTER_ID_GEN_BASIC,             // Cluster IDs - defined in the foundation (ie. zcl.h)
+        {
+            // Attribute record
+            ATTRID_BASIC_SMARTGARDEN_SOIL_SENSOR_ENABLE,            // Attribute ID - Found in Cluster Library header (ie. zcl_general.h)
+            ZCL_DATATYPE_UINT16,                 // Data Type - found in zcl.h
+            ACCESS_CONTROL_READ|ACCESS_CONTROL_WRITE,                // Variable access control - found in zcl.h
+            (void *)&zclSmartGarden_Sensor_Enable // Pointer to attribute variable
         }
     },
 

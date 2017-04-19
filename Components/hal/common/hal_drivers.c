@@ -227,10 +227,10 @@ uint16 Hal_ProcessEvent( uint8 task_id, uint16 events )
 	
 #if (defined HAL_KEY) && (HAL_KEY == TRUE)
     /* Check for keys */
-
-	cust_HalKeyPoll();
+    cust_HalKeyPoll();
     HalKeyPoll();
-
+    
+    cust_wdt_toggle();
     /* if interrupt disabled, do next polling */
     if (!Hal_KeyIntEnable)
     {

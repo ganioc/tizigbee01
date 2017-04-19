@@ -3133,6 +3133,10 @@ static ZStatus_t zclGeneral_ProcessInOnOff(zclIncoming_t *pInMsg,
     {
         switch(pInMsg->hdr.commandID)
         {
+            case COMMAND_SOIL_SENSOR_ENABLE:
+            case COMMAND_SOIL_SENSOR_DISABLE:
+            case COMMAND_PH_SENSOR_ENABLE:
+            case COMMAND_PH_SENSOR_DISABLE:
             case COMMAND_OFF:
             case COMMAND_ON:
             case COMMAND_TOGGLE:

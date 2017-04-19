@@ -6,6 +6,7 @@
 #include "OSAL.h"
 #include "sensor.h"
 #include "DebugTrace.h"
+#include "hal_led.h"
 
 extern uint16 zclSmartGarden_Temp;
 extern uint16 zclSmartGarden_Humidity;
@@ -18,6 +19,54 @@ uint8 read_soil_temp_humi_cmd[CMDLEN] = {SLAVE_ADDR, 0x03, 0x00,
 
 uint8 check_cmd[CMDLEN] = {SLAVE_ADDR, SLAVE, (SLAVE_REG >> 8)&0xff, 
                                           SLAVE_REG & 0xFF, 0x00, 0x01,0x0,0x0};
+
+
+
+void send_soil_temp_humi()
+{
+    sensor_switch(port0);
+   // cust_uart_flush();
+    cust_uart_write(read_soil_temp_humi_cmd, CMDLEN);
+}
+
+int read_soil_temp_humi_cb(uint8* buf, uint8 length)
+{
+    uint8 i = 0;
+    
+    if(length < 9){
+    
+      return -1;
+      
+    }
+    
+    if(length == 9 && !Cal_Crc16(buf, length))
+    {
+      
+      
+      zclSmartGarden_Temp = 0;
+      zclSmartGarden_Temp += buf[3];
+      zclSmartGarden_Temp <<= 8;
+      zclSmartGarden_Temp += buf[4];
+      
+      zclSmartGarden_Humidity = 0;
+      zclSmartGarden_Humidity += buf[5];
+      zclSmartGarden_Humidity <<= 8;
+      zclSmartGarden_Humidity += buf[6];
+      
+      cust_debug_str("temp:%d humi:%d", zclSmartGarden_Temp, zclSmartGarden_Humidity);
+      return 0;
+
+    }
+    else
+    {
+      cust_debug_str("rx soil wrong crc, len:%d", length);
+      for(; i < length; i++){
+         cust_debug_str("recvbuf[%d] = %d", i, buf[i]);
+      }
+        return -2;
+    }
+
+}
 uint16 Read_Soil_Temp_Humi()
 { 
    // debug_str(pbuf);

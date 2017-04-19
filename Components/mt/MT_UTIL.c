@@ -919,7 +919,7 @@ static void MT_UtilLedControl(uint8 *pBuf)
   else if ( iLed == 3 )
     Led = HAL_LED_3;
   else if ( iLed == 4 )
-    Led = HAL_LED_4;
+    Led = HAL_BEEP;
   else if ( iLed == 0xFF )
     Led = HAL_LED_ALL;
   else

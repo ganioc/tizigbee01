@@ -25,6 +25,13 @@
 #include "zGlobals.h"
 #include "gptimer.h"
 #include "hal_led.h"
+#include "cust_func.h"
+   
+   
+   
+// Added by Yang
+#include "tasks_type1.h"
+#include "cust_timer.h"
 
 /*********************************************************************
  * GLOBAL VARIABLES
@@ -32,13 +39,15 @@
 byte peripheral_TaskID;
 uint8 peripheralSeqNum=0;
 
+extern uint8 onlinesign;
+extern uint16  zclSmartGarden_AlarmStatus;
 extern uint8 zclSmartGarden_HeartbeatPeriod;
 extern uint16 zclSmartGarden_ChipId;
 extern uint8 Heartbeat;
 extern uint16    zclSmartGarden_DeviceType;
 extern uint16 zclSmartGarden_IrrigateOnOff;
-extern uint8 air_counter;
 
+extern uint16 zclSmartGarden_Sensor_Enable;
 afAddrType_t zclSample_CoorAddr;
 
 #ifdef ZCL_ON_OFF
@@ -117,35 +126,29 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
     if(events & PERIPH_RESET_EVENT)
     {
         //SystemReset();
-        sys_recover();
         peripheral_reset();
+        sys_recover();
+        cust_debug_str("reset");
+        SystemReset();
 
     }
-    if(events & PERIPH_PH_SENSOR_UPDATE){
-      
-      update_soil_ph_sensor();
-      
-      osal_start_timerEx(peripheral_TaskID, PERIPH_PH_SENSOR_UPDATE, 1 * 1000);
-     // return events & PERIPH_SENSOR_UPDATE;
+    
+        
+    if(events & PERIPH_TYPE_SENSOR_UPDATE)
+    {
+#ifdef CUST_ALARM
+    if(zclSmartGarden_AlarmStatus){
+        HalLedBlink (HAL_LED_3, 3, 60, 5000);
+        HalLedBlink (HAL_BEEP, 5, 50, 2000);
+      }
+#endif
+   
+        runSensorTypeTask();
     }
     
-    if(events & PERIPH_TEMPHUMI_SENSOR_UPDATE){
-      
-      update_soil_temphumi_sensor();
-      osal_start_timerEx(peripheral_TaskID, PERIPH_TEMPHUMI_SENSOR_UPDATE, 1 * 1000);
-      
-    }
     
-    if(events & PERIPH_AIR_LIGHT_UPDATE){
-        update_air_light();
-        osal_start_timerEx(peripheral_TaskID, PERIPH_AIR_LIGHT_UPDATE, 1 * 1000);
-  
-    }
     
-    if(events & PERIPH_AIR_TEMPHUMI_UPDATE){
-        update_air_temphumi();
-        osal_start_timerEx(peripheral_TaskID, PERIPH_AIR_TEMPHUMI_UPDATE, 1 * 1000);
-    }
+    
     
     if(events & PERIPH_HEARTBEAT_REPORT){
       
@@ -194,8 +197,18 @@ uint16 peripheral_event_loop(uint8 task_id, uint16 events)
         }else{
           //close the tune;
           zclSmartGarden_IrrigateOnOff = 0;
-          relay0_turn_off();
+          if(read_relay0_state()){
+             relay0_turn_off();
+          }
+          if(onlinesign){
+            onlinesign = 0;
+            HalLedBlink (HAL_LED_3, 0xFF, 62, 8000);
+          }
+         
         }
+        
+        // Added by Yang
+        start_1shot_cust_timer();
         
     }
     // Discard unknown events
@@ -255,7 +268,7 @@ void  peripheral_TestCmd(uint8 * pBuf)
 
 void peripheral_reset(void)
 {
-  /*
+  
     NLME_LeaveReq_t leaveReq;
 
     debug_str("_basicResetCB");
@@ -273,12 +286,8 @@ void peripheral_reset(void)
     {
         // Couldn't send out leave; prepare to reset anyway
         ZDApp_LeaveReset(FALSE);
-    }else{
-       CUST_LED1_OFF();
     }
-  */
-   zgWriteStartupOptions( ZG_STARTUP_SET, ZCD_STARTOPT_DEFAULT_NETWORK_STATE );
-   SystemResetSoft();
+  
 }
 /***
   srcEP=8
@@ -690,7 +699,71 @@ void peripheralCoordinator_ProcessIncomingCommand(peripheralCmd_t *msg_ptr)
             NULL );
 
         cust_debug_str("turnoff irrigate %d", status);
-    }    
+    }
+    else if(msg_ptr->cmdID == FUNC_ENABLE_SOIL_SENSOR){
+       status = zcl_SendCommand( 
+            (8), 
+            (&zclSample_DstAddr), 
+            ZCL_CLUSTER_ID_GEN_ON_OFF, 
+            COMMAND_SOIL_SENSOR_ENABLE, 
+            TRUE, 
+            ZCL_FRAME_CLIENT_SERVER_DIR, 
+            (true),
+            0, 
+            (0), 
+            0, 
+            NULL );
+
+        cust_debug_str("soil enable %d", status);
+    }
+    else if(msg_ptr->cmdID == FUNC_DISABLE_SOIL_SENSOR){
+       status = zcl_SendCommand( 
+            (8), 
+            (&zclSample_DstAddr), 
+            ZCL_CLUSTER_ID_GEN_ON_OFF, 
+            COMMAND_SOIL_SENSOR_DISABLE, 
+            TRUE, 
+            ZCL_FRAME_CLIENT_SERVER_DIR, 
+            (true),
+            0, 
+            (0), 
+            0, 
+            NULL );
+
+        cust_debug_str("soil disable %d", status);
+    }
+    else if(msg_ptr->cmdID == FUNC_ENABLE_PH_SENSOR){
+       status = zcl_SendCommand( 
+            (8), 
+            (&zclSample_DstAddr), 
+            ZCL_CLUSTER_ID_GEN_ON_OFF, 
+            COMMAND_PH_SENSOR_ENABLE, 
+            TRUE, 
+            ZCL_FRAME_CLIENT_SERVER_DIR, 
+            (true),
+            0, 
+            (0), 
+            0, 
+            NULL );
+
+        cust_debug_str("ph enable %d", status);
+    }
+    else if(msg_ptr->cmdID == FUNC_DISABLE_PH_SENSOR){
+       status = zcl_SendCommand( 
+            (8), 
+            (&zclSample_DstAddr), 
+            ZCL_CLUSTER_ID_GEN_ON_OFF, 
+            COMMAND_PH_SENSOR_DISABLE, 
+            TRUE, 
+            ZCL_FRAME_CLIENT_SERVER_DIR, 
+            (true),
+            0, 
+            (0), 
+            0, 
+            NULL );
+
+        cust_debug_str("ph disable %d", status);
+    }
     else{
             debug_str("Unknown cmdId");
     }

@@ -37,7 +37,7 @@
 
 // Added by Yang
 #define ATTRID_BASIC_SMARTGARDEN_HEARTBEAT_PERIOD               0x4001
-#define ATTRID_BASIC_SMARTGARDEN_ALARM_STATUS                      0x4012
+#define ATTRID_BASIC_SMARTGARDEN_ALARM_STATUS                      0x4002
 #define ATTRID_BASIC_SMARTGARDEN_PH_VALUE                      0x4003
 #define ATTRID_BASIC_SMARTGARDEN_TEMP                              0x4004
 #define ATTRID_BASIC_SMARTGARDEN_HUMIDITY                      0x4005
@@ -50,6 +50,9 @@
 #define ATTRID_BASIC_SMARTGARDEN_DEVICE_TYPE                  0x4012
 #define ATTRID_BASIC_SMARTGARDEN_TEMP_INTENSITY                0x4013
 #define ATTRID_BASIC_SMARTGARDEN_HUMI_INTENSITY                 0x4014 
+
+#define ATTRID_BASIC_SMARTGARDEN_SOIL_SENSOR_ENABLE                   0x4017
+
 
 //Coordinator cmdID
 #define FUNC_TURN_OFF_LIGHT_CMD                        0x0
@@ -72,6 +75,11 @@
 #define FUNC_TURN_ON_IRRIGATE_CMD                          0x41
 #define FUNC_TURN_OFF_IRRIGATE_CMD                          0x42
 #define FUNC_TURN_ON_PERMITJOINING_CMD                          0x43
+
+#define FUNC_ENABLE_SOIL_SENSOR                         0x50
+#define FUNC_DISABLE_SOIL_SENSOR                        0x51
+#define FUNC_ENABLE_PH_SENSOR                           0x52
+#define FUNC_DISABLE_PH_SENSOR                          0x53
 
 //SENSOR ERR STATE
 #define ZCLSMARTGARDEN_STATE_ERR_TEMP_HUMI   0x01
@@ -97,7 +105,7 @@
 #define BEEP_BASE               GPIO_C_BASE
 #define BEEP_PIN                GPIO_PIN_1
 #define BEEP_ON                 GPIO_PIN_1
-#define BEEP_OFF                (GPIOPinRead(GPIO_A_BASE, GPIO_PIN_ALL) & (~GPIO_PIN_1)) 
+#define BEEP_OFF                ~GPIO_PIN_1 
 
 #define GPIO_PIN_ALL            0xFF
 
@@ -124,6 +132,9 @@ typedef enum switch_port{
 #define DEVICE_TYPE_1           1
 #define DEVICE_TYPE_2           2 
 
+//wdt
+#define WDT_BASE        GPIO_B_BASE
+#define WDT_PIN         GPIO_PIN_2
 
 #define CUST_LED1_ON()    GPIOPinWrite(LED_BASE, LED_PIN1, LED_PIN1)
 
@@ -145,6 +156,8 @@ void cust_delay_10ms(void);
 void cust_delay_100ms(int n);
 
 void cust_uart_init(void);
+
+void cust_uart_flush(void);
 
 void cust_uart_close(void);
 
@@ -178,19 +191,6 @@ void cust_bspLedInit(void);
 
 
 
-void update_soil_ph_sensor(void);
-
-void update_soil_temphumi_sensor(void);
-
-//void soil_alarm_sign(void);
-
-void update_air_light(void);
-
-void update_air_temphumi(void);
-
-//void air_alarm_sign(void);
-
-
 //relay define
 void relay_init(void);
 
@@ -209,6 +209,8 @@ void relay1_turn_off(void);
 //beep define
 void beep_init(void);
 
+uint32 read_beep_state(void);
+
 void beep_on(void);
 
 void beep_off(void);
@@ -225,3 +227,8 @@ void open_port2(void);
 void open_port3(void);
 
 void sensor_switch(uint8 port);
+
+//wdt
+void cust_wdt_init(void);
+
+void cust_wdt_toggle(void);

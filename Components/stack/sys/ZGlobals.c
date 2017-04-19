@@ -224,7 +224,10 @@ uint16 zgApscDupRejTimeoutInc = DEFAULT_APS_DUP_REJ_TIMEOUT_INCREMENT;
 uint8  zgApscDupRejTimeoutCount = DEFAULT_APS_DUP_REJ_TIMEOUT;
 uint16 zgApsMinDupRejTableSize = APS_DUP_REJ_ENTRIES;
 
+//add by liu
+uint16 Sensor_Enable = 3;
 
+uint16 Air_Sensor_Enable = 1;
 
 /*********************************************************************
  * SECURITY GLOBAL VARIABLES
@@ -472,6 +475,10 @@ static CONST zgItem_t zgItemTable[] =
   {
     ZCD_NV_END_DEV_CONFIGURATION, sizeof(zgEndDeviceConfiguration), &zgEndDeviceConfiguration
   },
+  {
+    CUST_NV_SENSOR, sizeof(Sensor_Enable), &Sensor_Enable
+  },
+  
 #endif // NV_INIT
   // Last item -- DO NOT MOVE IT!
   {

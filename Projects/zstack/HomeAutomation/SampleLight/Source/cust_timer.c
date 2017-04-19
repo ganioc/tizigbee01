@@ -14,6 +14,33 @@ extern uint16 zclSmartGarden_HeartbeatPeriod;
 extern uint64 zclSmartGarden_ChipId;
 extern uint32 chipidH, chipidL;
 
+
+// Added by Yang
+void  init_1shot_cust_timer(){
+  
+  zclSmartGarden_ChipId = chipidH;
+  zclSmartGarden_ChipId <<= 32;
+  zclSmartGarden_ChipId += chipidL;
+
+}
+void start_1shot_cust_timer(){
+    osal_start_timerEx(peripheral_TaskID, PERIPH_HEARTBEAT_REPORT, 
+        zclSmartGarden_HeartbeatPeriod * 1000 );
+}
+
+void trigger_sensor_timer(){
+    //start read sensor
+    osal_start_timerEx(peripheral_TaskID, PERIPH_TYPE_SENSOR_UPDATE, 
+        PERIOD_SENSOR_UPDATE * 1000); 
+
+}
+
+
+
+
+
+
+
 void cust_timer_init(uint8 period)
 {
   SysCtrlPeripheralEnable(SYS_CTRL_PERIPH_GPT1);
@@ -47,3 +74,5 @@ void Timer1_Handler()
   osal_set_event(peripheral_TaskID, PERIPH_HEARTBEAT_REPORT);
   }
 }
+
+

@@ -89,6 +89,7 @@
 #include "hal_key.h"
 #include "cust_func.h"
 #include "gptimer.h"
+#include "tasks_type1.h"
 
 #if ( defined (ZGP_DEVICE_TARGET) || defined (ZGP_DEVICE_TARGETPLUS) \
       || defined (ZGP_DEVICE_COMBO) || defined (ZGP_DEVICE_COMBO_MIN) )
@@ -139,12 +140,16 @@ byte zclSampleLight_TaskID;
 uint8 zclSampleLightSeqNum = 0;
 Identify_List *Id_Header = NULL;
 uint8 Heartbeat;
+
+uint8 onlinesign = 0;
 extern uint8 peripheralSeqNum;
 extern uint16 zclSmartGarden_DeviceType;
 extern uint16 zclSmartGarden_IrrigateOnOff;
 
 extern uint16  zclSmartGarden_State;
-
+extern uint16  zclSmartGarden_Sensor_Enable;
+extern uint16  zclSmartGarden_AlarmStatus;
+extern uint16  zclSmartGarden_Air_Sensor;
 
 /*********************************************************************
  * GLOBAL FUNCTIONS
@@ -663,7 +668,7 @@ static void zclSampleLight_HandleKeys(byte shift, byte keys)
 #else // NOT EZ-Mode
         {
             zAddrType_t dstAddr;
-            HalLedSet(HAL_LED_4, HAL_LED_MODE_OFF);
+            //HalLedSet(HAL_LED_4, HAL_LED_MODE_OFF);
 
             // Initiate an End Device Bind Request, this bind request will
             // only use a cluster list that is important to binding.
@@ -897,7 +902,7 @@ static void zclSampleLight_ProcessIdentifyTimeChange(void)
         //debug_str("zclSampleLight_IdentifyTime");
         osal_start_timerEx(zclSampleLight_TaskID, SAMPLELIGHT_IDENTIFY_TIMEOUT_EVT, 1000);
         //Added by Yang
-        HalLedBlink(HAL_LED_4, 0xFF, HAL_LED_DEFAULT_DUTY_CYCLE, HAL_LED_DEFAULT_FLASH_TIME);
+       // HalLedBlink(HAL_LED_4, 0xFF, HAL_LED_DEFAULT_DUTY_CYCLE, HAL_LED_DEFAULT_FLASH_TIME);
     }
     else
     {
@@ -1049,7 +1054,8 @@ static void zclSampleLight_OnOffCB(uint8 cmd)
     }
     else if( cmd == COMMAND_IDENTIFYING){
         debug_str("Identifying");
-        HalLedBlink (HAL_LED_1, 3, 50, 2000);
+        HalLedStopBlink(HAL_LED_3);
+        HalLedBlink (HAL_LED_3, 3, 50, 2000);
     }
     else if(cmd == COMMAND_TURN_ON_IRRIGATE){
         debug_str("turn on irrigate");
@@ -1069,6 +1075,33 @@ static void zclSampleLight_OnOffCB(uint8 cmd)
         debug_str("turn on permitjoining");
         NLME_PermitJoiningRequest(0xF0);
         HalLedBlink (HAL_LED_2, 120, 50, 2000);
+    }
+    else if(cmd == COMMAND_SOIL_SENSOR_ENABLE){
+      zclSmartGarden_Sensor_Enable |= 1;
+     
+      osal_nv_write( CUST_NV_SENSOR, 0, sizeof(uint16), &zclSmartGarden_Sensor_Enable );
+    }
+    else if(cmd == COMMAND_SOIL_SENSOR_DISABLE){
+      cust_debug_str("soil sensor disable");
+      if((zclSmartGarden_Sensor_Enable & 1) && (zclSmartGarden_AlarmStatus & 1)){
+        zclSmartGarden_AlarmStatus &= (~1);
+      }
+      zclSmartGarden_Sensor_Enable &= (~1);
+      osal_nv_write( CUST_NV_SENSOR, 0, sizeof(uint16), &zclSmartGarden_Sensor_Enable );
+    }
+    else if(cmd == COMMAND_PH_SENSOR_ENABLE){
+      zclSmartGarden_Sensor_Enable |= 2;
+
+      osal_nv_write( CUST_NV_SENSOR, 0, sizeof(uint16), &zclSmartGarden_Sensor_Enable );
+    }
+    else if(cmd == COMMAND_PH_SENSOR_DISABLE){
+      cust_debug_str("ph sensor disable");
+      if((zclSmartGarden_Sensor_Enable & 2) && (zclSmartGarden_AlarmStatus & 2)){
+        zclSmartGarden_AlarmStatus &= (~2);
+      }
+      zclSmartGarden_Sensor_Enable &= (~2);
+      
+      osal_nv_write( CUST_NV_SENSOR, 0, sizeof(uint16), &zclSmartGarden_Sensor_Enable );
     }
 
 #if ZCL_LEVEL_CTRL
@@ -1144,6 +1177,7 @@ static void zclSampleLight_MoveBasedOnRate(uint8 newLevel, uint32 rate)
  * @fn      zclSampleLight_MoveBasedOnTime
  *
  * @brief   Calculate rate based on time, and startup level state machine
+
  *
  * @param   newLevel  - new level for current level
  * @param   time      - in 10ths of seconds
@@ -1938,6 +1972,11 @@ static void zclSampleLight_ProcessInReportCmd(zclIncomingMsg_t *pInMsg)
         case ATTRID_BASIC_SMARTGARDEN_CHIPID_ACK :
             cust_debug_str("Heartbeat ACK");
             Heartbeat = 3;
+            if(!onlinesign){
+               HalLedStopBlink(HAL_LED_3);
+               onlinesign = 1;
+            }
+           
             break;
         case ATTRID_BASIC_SMARTGARDEN_ALARM_STATUS:
         {

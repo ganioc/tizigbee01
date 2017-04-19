@@ -17,3 +17,11 @@ void Read_Air_Data(void);
 void Read_Air_Sensor(void);
 
 uint16 CAL_CRC16_TAB(uint8* pchMsg, uint16 wDataLen);
+
+void send_air_light();
+
+void send_air_temphumi();
+
+int read_air_light_cb(uint8* buf, uint8 len);
+
+int read_air_temphumi_cb(uint8* buf, uint8 len);
